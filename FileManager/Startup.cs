@@ -116,12 +116,11 @@ namespace FileManager
             
             app.UseEndpoints(endpoints =>
             {
-                endpoints.MapControllers(); // or MapControllerRoute, etc.
                 // Catch-all fallback for SPA routes
-                endpoints.MapFallbackToFile("index.html");
                 endpoints.MapControllerRoute(
                     name: "default",
                     pattern: "{controller}/{action=Index}/{id?}");
+                endpoints.MapFallbackToFile("index.html");
             });
             
             app.UseSpa(spa =>
