@@ -102,7 +102,11 @@ namespace FileManager
             app.UseRouting();
             app.UseAuthentication();
             app.UseAuthorization();
-
+            app.UseStaticFiles();
+            if (!env.IsDevelopment())
+            {
+                app.UseSpaStaticFiles();
+            }
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllerRoute(
