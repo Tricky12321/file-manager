@@ -1,0 +1,10 @@
+﻿<div>
+  <div class="mat-dialog-title">
+    <span>{{data.header}}</span>
+  </div>
+  <div class="content-container mb-3">
+    <span class="content-span full-width" [innerHTML]="data.message"></span>
+  </div>
+  <button class="btn btn-secondary mt-1" id="no-button" (click)="closeDialog(false)">{{data.noButton}}</button>
+  <button class="btn btn-primary mt-1 float-end" id="yes-button" (click)="closeDialog(true)">{{data.yesButton}}</button>
+</div>

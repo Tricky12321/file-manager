@@ -1,0 +1,24 @@
+<h1>Torrent dashboard</h1>
+<button (click)="refreshData()" class="btn btn-secondary">Refresh data</button>
+@if (this.torrentList != null) {
+<table datatable [dtOptions]="dtOptions" class="table table-bordered table-striped table-hover modern-table">
+  <thead>
+  <tr>
+    <th>Name</th>
+    <th>Path</th>
+    <th>Size</th>
+    <th>Category</th>
+  </tr>
+  </thead>
+  <tbody>
+    @for (torrentInfo of torrentList; track torrentInfo.name) {
+      <tr>
+        <td>{{torrentInfo.name}}</td>
+        <td>{{torrentInfo.contentPath}}</td>
+        <td [attr.data-sort]="torrentInfo.totalSizeGigabytes">{{torrentInfo.totalSizeGigabytes}} GB</td>
+        <td [attr.data-sort]="torrentInfo.category"><span class="badge bg-secondary">{{torrentInfo.category}}</span></td>
+      </tr>
+    }
+  </tbody>
+</table>
+}

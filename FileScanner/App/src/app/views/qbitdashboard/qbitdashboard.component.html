@@ -1,0 +1,21 @@
+@if (this.torrentList != null) {
+
+<table cTable datatable>
+  <thead>
+  <tr>
+    <th scope="col">Name</th>
+    <th scope="col">Path</th>
+    <th scope="col">Category</th>
+  </tr>
+  </thead>
+  <tbody>
+    @for (torrentInfo of torrentList; track torrentInfo.name) {
+      <tr>
+        <td>{{torrentInfo.name}}</td>
+        <td>{{torrentInfo.contentPath}}</td>
+        <td><span class="badge bg-secondary">{{torrentInfo.category}}</span></td>
+      </tr>
+    }
+  </tbody>
+</table>
+}

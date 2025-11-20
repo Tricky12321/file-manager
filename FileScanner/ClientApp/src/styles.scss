@@ -1,0 +1,533 @@
+/* Version 1.0 */
+@import "./bootstrap-variables";
+
+@import "../node_modules/bootstrap/scss/bootstrap";
+@import "./styles/modernTable";
+@import url('https://fonts.googleapis.com/css2?family=Titillium+Web:ital,wght@0,200;0,300;0,400;0,600;0,700;0,900;1,200;1,300;1,400;1,600;1,700&display=swap');
+
+
+// Disable soring on datatables
+.table-no-sorting > thead > tr > th[class*="sort"]:before,
+.table-no-sorting > thead > tr > th[class*="sort"]:after {
+  content: "" !important;
+}
+
+/* style mat-table */
+.hide {
+  display: none;
+}
+
+/* Global styles */
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  overflow-y: scroll;
+  font-family: Roboto, "Helvetica Neue", sans-serif;
+}
+
+.link {
+  color: #3366CC;
+  text-decoration: underline;
+}
+
+.hidden {
+  display: none;
+}
+
+/* Button Switch / Slider */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 130px;
+  height: 34px;
+  margin-bottom: 0px;
+}
+
+.switch input {
+  display: none;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: $primary; //#0099ff; /* Primary */
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  -webkit-transition: .4s;
+  transition: .4s;
+}
+
+input:checked + .slider {
+  background-color: $secondary;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #2196F3;
+}
+
+input:checked + .slider:before {
+  -webkit-transform: translateX(95px);
+  -ms-transform: translateX(95px);
+  transform: translateX(95px);
+}
+
+.on {
+  display: none;
+}
+
+.on, .off {
+  color: white;
+  position: absolute;
+  transform: translate(-50%, -50%);
+  top: 50%;
+  left: 50%;
+  font-size: 10px;
+  font-family: Verdana, sans-serif;
+}
+
+input:checked + .slider .on {
+  display: block;
+}
+
+input:checked + .slider .off {
+  display: none;
+}
+
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+/* Titels */
+.pageTitle h1,
+.pageTitle h2 {
+  font-weight: 700;
+}
+
+h2 {
+}
+
+.text-pink {
+  color: #ff88aa;
+}
+
+.text-red {
+  color: #ff0000;
+}
+
+
+/* Tables */
+table th {
+  font-weight: 600 !important;
+  font-size: 13px !important;
+  color: #000 !important;
+}
+
+table td {
+  font-size: 12px !important;
+}
+
+table.table-bordered {
+  border-color: rgba(0, 0, 0, .12) !important;
+}
+
+table.table-bordered thead tr {
+  border-bottom: 2px solid rgba(0, 0, 0, 1) !important;
+}
+
+table.table-bordered tbody {
+}
+
+table.table-bordered th,
+table.table-bordered td {
+  padding: 3px;
+}
+
+table.table-bordered.table-collaps tbody tr:nth-child(even) td {
+  padding: 0px;
+}
+
+.icon .mat-sort-header-arrow {
+  opacity: 0 !important;
+}
+
+.mat-sort-header-arrow {
+  opacity: 0.54 !important;
+}
+
+.mat-sort-header-sorted .mat-sort-header-arrow {
+  opacity: 1 !important;
+}
+
+/* Mat table sticky paginator */
+.mat-header-row {
+  top: 60px !important;;
+  background: white;
+}
+
+.mat-paginator-sticky {
+  bottom: 0px;
+  position: sticky;
+  z-index: 10;
+}
+
+/* Input close / remove icon */
+.input-close-icon input {
+  min-width: 250px;
+  padding-right: 35px;
+}
+
+.input-close-icon a.btn {
+  position: absolute;
+  right: 15px;
+  top: 0;
+}
+
+@media only screen and (max-width: 575px) {
+  .input-close-icon {
+    min-width: 100%;
+  }
+}
+
+/* Import bootstrap */
+
+/* Bootstrap overwrites */
+.card {
+  border-radius: 0px;
+}
+
+.btn-primary {
+  color: #fff;
+}
+
+/* Form group - Fix jumping with form validation */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group .invalid-feedback {
+  position: absolute;
+  margin-top: 0;
+}
+
+/* Input group - Input and button */
+.form-group .input-group .invalid-feedback {
+  bottom: -19px;
+}
+
+/* Custom center navbar */
+.itop-navbar-center {
+  position: absolute;
+  left: 50%;
+  transform: translatex(-50%);
+}
+
+/* Navbar */
+.navbar.navbar-dark .nav-link {
+  color: white;
+}
+
+.navbar .navbar-brand img {
+  padding: 5px 10px;
+  height: 40px;
+
+  @media (min-width: 1300px) {
+    padding: 8px 21px;
+    height: 60px;
+  }
+}
+
+/* Sidebar */
+#sidebar-container .sticky-offset {
+  padding-top: 60px;
+
+  .title {
+    padding: 16px 14px 4px;
+    margin: 0;
+    font-size: 16px;
+    color: #ffffff;
+  }
+
+  .list-group-item {
+    height: 30px;
+    font-size: 18px;
+    color: rgba(255, 255, 255, .5);
+    padding: 8px 24px;
+
+    &.active {
+      color: #fff;
+    }
+  }
+}
+
+/* Style table mobile start */
+.mobile-label, .mobile-label-130 {
+  display: none;
+}
+
+.show-on-desktop {
+  display: flex;
+}
+
+@media(max-width: 600px) {
+  .show-on-desktop {
+    display: none;
+  }
+
+  .mobile-header {
+    font-size: 1rem;
+    font-weight: bold;
+    text-decoration: underline;
+  }
+
+  .mat-table {
+    overflow: auto;
+    max-height: 500px;
+  }
+
+  .mobile-label {
+    width: 80px;
+    display: inline-block;
+    font-weight: bold;
+  }
+
+  .mobile-label-130 {
+    width: 130px;
+    display: inline-block;
+    font-weight: bold;
+  }
+
+  .mat-header-row {
+    display: none;
+  }
+
+  .mat-row {
+    flex-direction: column;
+    align-items: start;
+    padding: 8px 24px;
+    min-height: 12px;
+  }
+
+  mat-cell:first-child, mat-footer-cell:first-child, mat-header-cell:first-child {
+    padding-left: 0 !important;
+  }
+
+  .containerCustomWidth {
+    width: 100% !important;
+  }
+
+  .mobile-w-50 {
+    width: 50%;
+    display: inline-block;
+  }
+}
+
+/* Style table mobile end */
+
+
+/* Adds the cursor: Pointer */
+.pointer {
+  cursor: pointer;
+}
+
+.newLines {
+  white-space: pre-wrap;
+  word-break: break-all !important;
+}
+
+/* Bootstrap input group text overwrite */
+.input-group-text {
+  background-color: #c8c8c8;
+  color: #212529;
+}
+
+.colorGreen {
+  color: green;
+}
+
+.colorRed {
+  color: Red;
+}
+
+.colorOrange {
+  color: orange;
+}
+
+.my-tooltip {
+  white-space: pre-line;
+}
+
+.popover-header {
+  margin: 0 !important;
+}
+
+.popover-body {
+  font-size: 0.8rem;
+}
+
+/* Form input */
+input[disabled],
+input[readonly] {
+  background-color: #c8c8c8;
+  color: #212529;
+  font-size: 13px;
+
+  &.imp {
+    background-color: #e6ecff;
+  }
+
+  &.exp {
+    background-color: #cce6ff;
+  }
+
+  &.inv {
+    background-color: #e6f2ff;
+  }
+
+  &.warningdiff {
+    background-color: #FEFEC8;
+  }
+
+  &.negativediff {
+    background-color: #ff88aa !important; // #ff88aa
+  }
+
+  &.nodiff {
+    background-color: #b1e7c3;
+  }
+}
+
+/* Numbers alined */
+hr {
+  margin: 0 0 3px;
+  width: calc((16em + 6px) * 3); // Only width of content
+  &.dbl {
+    border-top: 3px double #8c8b8b;
+    background-color: white;
+  }
+}
+
+.lbl {
+  display: inline-block;
+  font-size: 12px;
+  text-align: center;
+  width: 9em;
+  font-weight: bold;
+  border: 1px solid white;
+}
+
+div.lbl.x2 {
+  width: calc(18em + 3px);
+}
+
+div.lbl.x4 {
+  width: calc((18em + 3px) * 2);
+}
+
+div.lbl.x6 {
+  width: calc((18em + 6px) * 3);
+}
+
+div.lbl.lft {
+  text-align: left;
+}
+
+div.lbl.rgt {
+  text-align: right;
+}
+
+div.lbl.underline {
+  border-bottom: 1px dotted grey;
+}
+
+/* Add dots if the text is to long */
+.add-dots {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.label-spacing {
+  height: 24px;
+  display: block;
+}
+
+/*
+ Accordion
+ */
+.accordion {
+  border: 1px solid var(--bs-gray-400);
+  padding: 15px;
+
+  h2 {
+    background: var(--bs-gray-400);
+    padding: 6px;
+    margin: -15px -15px 15px -15px;
+  }
+}
+
+.text-orange {
+  color: #fc9d03
+}
+
+.mock-link {
+  color: #0000EE;
+  text-decoration: underline;
+}
+
+.mock-link:hover {
+  cursor: pointer;
+}
+
+.align-left {
+  text-align: left;
+}
+
+.align-right {
+  text-align: right;
+}
+
+.dt-largetext > tbody > tr > td {
+  font-size: 1.2em !important;
+}
+
+.mat-mdc-dialog-surface {
+  padding: 5px !important;
+}
+
+.dashboard-icon:nth-child(even) {
+  margin-right: 10px;
+  margin-left: 10px;
+}
+
+.text-bold {
+  font-weight: bold !important;
+}
+
+.content-xml {
+  overflow-y: auto;
+}
+
+.header-text-row {
+  font-weight: bold !important;
+}
