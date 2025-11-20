@@ -110,6 +110,7 @@ namespace FileManager
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseStaticFiles();
+            app.UseDefaultFiles();
             if (!env.IsDevelopment())
             {
                 app.UseSpaStaticFiles();
