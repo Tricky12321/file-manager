@@ -29,5 +29,7 @@ FROM base AS final
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
 WORKDIR /app
+
 COPY --from=publish /app/publish .
+RUN cp -R /app/ClientApp/dist/browser /app/public
 CMD ["dotnet", "FileManager.dll"]
