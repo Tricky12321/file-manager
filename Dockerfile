@@ -11,7 +11,7 @@ EXPOSE 443
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 RUN apt-get update -yq \
     && apt-get install curl gnupg -yq \
-    && curl -sL https://deb.nodesource.com/setup_18.x | bash \
+    && curl -sL https://deb.nodesource.com/setup_24.x | bash \
     && apt-get install nodejs -yq \
 	&& apt-get install -y libgdiplus
 RUN npm install --global yarn
