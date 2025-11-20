@@ -85,7 +85,7 @@ namespace FileManager
             }
             else
             {
-                services.AddSpaStaticFiles(configuration => { configuration.RootPath = "/app/public"; });
+                services.AddSpaStaticFiles(configuration => { configuration.RootPath = "/app/wwwroot"; });
             }
 
         }
@@ -146,7 +146,7 @@ namespace FileManager
                 {
                     spa.Options.DefaultPageStaticFileOptions = new StaticFileOptions
                     {
-                        RequestPath = "/app/public",
+                        RequestPath = "/app/wwwroot",
                         OnPrepareResponse = context => { context.Context.Response.Headers.Add("Cache-Control", "public, max-age=43200"); }
                     };
                 }
