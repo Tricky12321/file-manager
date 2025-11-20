@@ -111,7 +111,7 @@ namespace FileManager
             app.UseAuthentication();
             app.UseAuthorization();
             app.UseStaticFiles();
-            app.UseDefaultFiles();
+            app.UseSpaStaticFiles();
             
             app.UseEndpoints(endpoints =>
             {
