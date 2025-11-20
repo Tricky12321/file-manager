@@ -65,6 +65,12 @@
         <_ContentIncludedByDefault Remove="wwwroot/favicon.ico" />
         <_ContentIncludedByDefault Remove="ClientApp\dist\ngsw.json" />
         <_ContentIncludedByDefault Remove="ClientApp\e2e\tsconfig.e2e.json" />
+        <_ContentIncludedByDefault Remove="App\angular.json" />
+        <_ContentIncludedByDefault Remove="App\package-lock.json" />
+        <_ContentIncludedByDefault Remove="App\package.json" />
+        <_ContentIncludedByDefault Remove="App\tsconfig.app.json" />
+        <_ContentIncludedByDefault Remove="App\tsconfig.json" />
+        <_ContentIncludedByDefault Remove="App\tsconfig.spec.json" />
     </ItemGroup>
 
     <ItemGroup>
@@ -73,7 +79,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Folder Include="App\src\app\models\" />
       <Folder Include="ClientApp\src\app\shared\services\dialogs\confirmDialog\" />
       <Folder Include="ClientApp\src\assets\" />
       <Folder Include="Models\Dtos\" />
