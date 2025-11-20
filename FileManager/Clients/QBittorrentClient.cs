@@ -37,6 +37,7 @@ public sealed class QbittorrentClient : IDisposable
     /// <summary>For cookie-based auth (qBittorrent default). No-op if using Basic auth.</summary>
     public async Task AuthenticateAsync()
     {
+        return;
         if (_useBasicAuth || _authenticated) return;
 
         using var content = new FormUrlEncodedContent(new[]
