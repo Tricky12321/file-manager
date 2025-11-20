@@ -19,7 +19,7 @@ WORKDIR /src
 COPY ["FileScanner/FileScanner.csproj", "FileScanner/"]
 RUN dotnet restore "FileScanner/FileScanner.csproj"
 COPY . .
-WORKDIR /src/TimevatReport
+WORKDIR /src/FileScanner
 RUN dotnet build "FileScanner.csproj" -c Release -o /app/build
 RUN dotnet publish "FileScanner.csproj" -c Release -o /app/publish
 FROM build AS publish
