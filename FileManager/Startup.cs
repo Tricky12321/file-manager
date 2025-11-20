@@ -112,7 +112,6 @@ namespace FileManager
             app.UseAuthorization();
             app.UseStaticFiles();
             app.UseDefaultFiles();
-            app.UseSpaStaticFiles();
             
             app.UseEndpoints(endpoints =>
             {
@@ -120,7 +119,6 @@ namespace FileManager
                 endpoints.MapControllerRoute(
                     name: "default",
                     pattern: "{controller}/{action=Index}/{id?}");
-                endpoints.MapFallbackToFile("index.html");
             });
             
             app.UseSpa(spa =>
