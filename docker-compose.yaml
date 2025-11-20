@@ -6,13 +6,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile # installs OpenTelemetry .NET Automatic Instrumentation
+    network_mode: host
     extra_hosts:
       - "host.docker.internal:host-gateway"
     environment:
       TZ: Europe/Copenhagen
       LANG: C.UTF-8
       LC_ALL: C.UTF-8
-      ASPNETCORE_URLS: http://+:80
+      ASPNETCORE_URLS: http://+:7070
     restart: unless-stopped
-    ports:
-      - "7070:80"
