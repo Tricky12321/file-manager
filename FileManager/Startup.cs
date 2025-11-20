@@ -78,6 +78,7 @@ namespace FileManager
             }));
 
             services.AddControllersWithViews();
+            
             // In production, the Angular files will be served from this directory
             if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
             {
@@ -112,8 +113,12 @@ namespace FileManager
             app.UseStaticFiles();
             app.UseDefaultFiles();
             app.UseSpaStaticFiles();
+            
             app.UseEndpoints(endpoints =>
             {
+                endpoints.MapControllers(); // or MapControllerRoute, etc.
+                // Catch-all fallback for SPA routes
+                endpoints.MapFallbackToFile("index.html");
                 endpoints.MapControllerRoute(
                     name: "default",
                     pattern: "{controller}/{action=Index}/{id?}");
