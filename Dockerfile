@@ -19,7 +19,7 @@ WORKDIR /src
 COPY ["FileManager/FileManager.csproj", "FileManager/"]
 RUN dotnet restore "FileManager/FileManager.csproj"
 COPY . .
-WORKDIR /src/FileScanner
+WORKDIR /src/FileManager
 RUN dotnet build "FileManager.csproj" -c Release -o /app/build
 RUN dotnet publish "FileManager.csproj" -c Release -o /app/publish
 FROM build AS publish
