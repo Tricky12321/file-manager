@@ -2,6 +2,7 @@ services:
   timevat:
     image: tricky/fileScanner:latest
     container_name: fileScanner
+    user: 0:0
     volumes:
       - /mnt/filesystem/storage/torrent:/torrent
     build:

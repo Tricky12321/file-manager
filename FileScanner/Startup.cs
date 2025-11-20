@@ -136,7 +136,7 @@ namespace FileManager
                 {
                     spa.Options.DefaultPageStaticFileOptions = new StaticFileOptions
                     {
-                        RequestPath = "/app/public",
+                        RequestPath = "/app/ClientApp/dist/browser",
                         OnPrepareResponse = context => { context.Context.Response.Headers.Add("Cache-Control", "public, max-age=43200"); }
                     };
                 }
