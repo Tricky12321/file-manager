@@ -16,12 +16,12 @@ RUN apt-get update -yq \
 	&& apt-get install -y libgdiplus
 RUN npm install --global yarn
 WORKDIR /src
-COPY ["FileScanner/FileScanner.csproj", "FileScanner/"]
-RUN dotnet restore "FileScanner/FileScanner.csproj"
+COPY ["FileManager/FileManager.csproj", "FileManager/"]
+RUN dotnet restore "FileManager/FileManager.csproj"
 COPY . .
 WORKDIR /src/FileScanner
-RUN dotnet build "FileScanner.csproj" -c Release -o /app/build
-RUN dotnet publish "FileScanner.csproj" -c Release -o /app/publish
+RUN dotnet build "FileManager.csproj" -c Release -o /app/build
+RUN dotnet publish "FileManager.csproj" -c Release -o /app/publish
 FROM build AS publish
 
 COPY --from=build /app/publish .
@@ -30,4 +30,4 @@ ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
 WORKDIR /app
 COPY --from=publish /app/publish .
-CMD ["dotnet", "FileScanner.dll"]
+CMD ["dotnet", "FileManager.dll"]

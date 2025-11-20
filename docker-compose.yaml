@@ -1,6 +1,6 @@
 services:
   timevat:
-    container_name: fileScanner
+    container_name: filemanager
     user: 0:0
     volumes:
       - /mnt/filesystem/storage/torrent:/torrent
