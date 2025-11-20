@@ -120,14 +120,13 @@ namespace FileManager
                     name: "default",
                     pattern: "{controller}/{action=Index}/{id?}");
             });
-
+            
             app.UseSpa(spa =>
             {
                 // To learn more about options for serving an Angular SPA from ASP.NET Core,
                 // see https://go.microsoft.com/fwlink/?linkid=864501
 
                 spa.Options.SourcePath = "ClientApp";
-
                 if (env.IsDevelopment() || Environment.GetEnvironmentVariable("USE_DEV_SITE") == "true")
                 {
                     string angularProjectPath = spa.Options.SourcePath;
@@ -152,6 +151,8 @@ namespace FileManager
                     };
                 }
             });
+            Console.WriteLine($"ContentRootPath: {env.ContentRootPath}");
+            Console.WriteLine($"WebRootPath:     {env.WebRootPath}");
         }
         
         private static int GetFreePort(int minPort = 45001, int maxPort = 65535)
