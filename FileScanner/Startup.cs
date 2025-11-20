@@ -79,7 +79,14 @@ namespace FileManager
 
             services.AddControllersWithViews();
             // In production, the Angular files will be served from this directory
-            services.AddSpaStaticFiles(configuration => { configuration.RootPath = "ClientApp/dist"; });
+            if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
+            {
+                services.AddSpaStaticFiles(configuration => { configuration.RootPath = "ClientApp/dist"; });
+            }
+            else
+            {
+                services.AddSpaStaticFiles(configuration => { configuration.RootPath = "ClientApp/dist/browser"; });
+            }
 
         }
 
