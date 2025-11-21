@@ -42,15 +42,6 @@ namespace FileManager
             services.AddScoped<FileSystemService>();
 
             // --- Forwarded headers (for Caddy / reverse proxy) ---
-            services.Configure<ForwardedHeadersOptions>(options =>
-            {
-                options.ForwardedHeaders =
-                    ForwardedHeaders.XForwardedFor |
-                    ForwardedHeaders.XForwardedProto |
-                    ForwardedHeaders.XForwardedHost;
-                options.KnownNetworks.Clear();
-                options.KnownProxies.Clear();
-            });
 
             services.Configure<RequestLocalizationOptions>(options =>
             {
@@ -66,10 +57,6 @@ namespace FileManager
                 options.RequestCultureProviders.Clear();
             });
             
-
-            //Inject AppSettings
-            services.Configure<ApplicationSettings>(Configuration.GetSection("ApplicationSettings"));
-
             //Add automapper used to convert db models to dto
             services.AddAutoMapper(typeof(Startup));
 
