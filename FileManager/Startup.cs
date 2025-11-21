@@ -3,16 +3,22 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Text;
+using System.Threading.RateLimiting;
 using System.Threading.Tasks;
-using FileManager;
 using FileManager.Services;
+using Hangfire;
+using Hangfire.MemoryStorage;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Localization;
+using Microsoft.AspNetCore.SpaServices.AngularCli;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
@@ -35,8 +41,17 @@ namespace FileManager
             services.AddScoped<QBittorrentService>();
             services.AddScoped<FileSystemService>();
 
-            services.AddControllersWithViews();
-            
+            // --- Forwarded headers (for Caddy / reverse proxy) ---
+            services.Configure<ForwardedHeadersOptions>(options =>
+            {
+                options.ForwardedHeaders =
+                    ForwardedHeaders.XForwardedFor |
+                    ForwardedHeaders.XForwardedProto |
+                    ForwardedHeaders.XForwardedHost;
+                options.KnownNetworks.Clear();
+                options.KnownProxies.Clear();
+            });
+
             services.Configure<RequestLocalizationOptions>(options =>
             {
                 var requestCulture = new RequestCulture("da-DK");
@@ -50,6 +65,10 @@ namespace FileManager
                 };
                 options.RequestCultureProviders.Clear();
             });
+            
+
+            //Inject AppSettings
+            services.Configure<ApplicationSettings>(Configuration.GetSection("ApplicationSettings"));
 
             //Add automapper used to convert db models to dto
             services.AddAutoMapper(typeof(Startup));
@@ -78,17 +97,8 @@ namespace FileManager
             }));
 
             services.AddControllersWithViews();
-            
             // In production, the Angular files will be served from this directory
-            if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development")
-            {
-                services.AddSpaStaticFiles(configuration => { configuration.RootPath = "ClientApp/dist"; });
-            }
-            else
-            {
-                services.AddSpaStaticFiles(configuration => { configuration.RootPath = "/app/wwwroot"; });
-            }
-
+            services.AddSpaStaticFiles(configuration => { configuration.RootPath = "ClientApp/dist"; });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -104,18 +114,28 @@ namespace FileManager
                 app.UseDeveloperExceptionPage();
             }
 
+            /*using (var scope = app.ApplicationServices.CreateScope())
+            {
+                try
+                {
+                    FeatureLoggerSeeder.SeedAsync(scope.ServiceProvider)
+                        .GetAwaiter().GetResult();
+                }
+                catch (Exception ex)
+                {
+                    Console.Error.WriteLine($"FeatureLogger seeding failed: {ex}");
+                }
+            }*/
+
             app.UseSpaStaticFiles();
             app.UseMiddleware<RequestMiddleware>();
             app.UseCors("default");
             app.UseRouting();
             app.UseAuthentication();
             app.UseAuthorization();
-            app.UseStaticFiles();
-            app.UseSpaStaticFiles();
-            
+
             app.UseEndpoints(endpoints =>
             {
-                // Catch-all fallback for SPA routes
                 endpoints.MapControllerRoute(
                     name: "default",
                     pattern: "{controller}/{action=Index}/{id?}");
@@ -126,8 +146,9 @@ namespace FileManager
                 // To learn more about options for serving an Angular SPA from ASP.NET Core,
                 // see https://go.microsoft.com/fwlink/?linkid=864501
 
+
                 spa.Options.SourcePath = "ClientApp";
-                if (env.IsDevelopment() || Environment.GetEnvironmentVariable("USE_DEV_SITE") == "true")
+                if ((env.IsDevelopment() || Environment.GetEnvironmentVariable("USE_DEV_SITE") == "true" || Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == "Development"))
                 {
                     string angularProjectPath = spa.Options.SourcePath;
                     int port = GetFreePort();
@@ -140,24 +161,21 @@ namespace FileManager
                     };
 
                     Process process = Process.Start(psi);
-                    spa.UseProxyToSpaDevelopmentServer("http://localhost:"+port);
+                    spa.UseProxyToSpaDevelopmentServer("http://localhost:" + port);
                 }
                 else
                 {
                     spa.Options.DefaultPageStaticFileOptions = new StaticFileOptions
                     {
-                        RequestPath = "/app/wwwroot",
-                        OnPrepareResponse = context => { context.Context.Response.Headers.Add("Cache-Control", "public, max-age=43200"); }
+                        FileProvider = new PhysicalFileProvider("/app/ClientApp/dist/browser"),
+                        OnPrepareResponse = context => { context.Context.Response.Headers.Add("Cache-Control", "max-age=3000, must-revalidate"); }
                     };
                 }
             });
-            Console.WriteLine($"ContentRootPath: {env.ContentRootPath}");
-            Console.WriteLine($"WebRootPath:     {env.WebRootPath}");
         }
-        
-        private static int GetFreePort(int minPort = 45001, int maxPort = 65535)
+        private static int GetFreePort()
         {
-            int port = new Random().Next(minPort, maxPort);
+            int port = new Random().Next(45001, 65535);
             do
             {
                 // Check if the port is available
