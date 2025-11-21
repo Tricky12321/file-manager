@@ -3,6 +3,7 @@ services:
     container_name: filemanager
     volumes:
       - /mnt/filesystem/storage/torrent:/torrent
+    user: 0
     build:
       context: .
       dockerfile: Dockerfile # installs OpenTelemetry .NET Automatic Instrumentation
