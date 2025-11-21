@@ -23,12 +23,14 @@ export class FileBrowserComponent implements OnInit {
   public hardlinkFilter: boolean | null = null;
   public inQbitFilter: boolean | null = null;
   public folderInQbitFilter: boolean | null = null;
+  public needConfirm: boolean = true;
 
   constructor(public generalService: GeneralService, public fileService: FileService, public dialogSrv: DialogService, public toastrService: ToastrService) {
 
     this.hardlinkFilter = localStorage.getItem("hardlink") == "null" ? null : (localStorage.getItem("hardlink") == "true");
     this.inQbitFilter = localStorage.getItem("inQbit") == "null" ? null : (localStorage.getItem("inQbit") == "true");
     this.folderInQbitFilter = localStorage.getItem("folderInQbit") == "null" ? null : (localStorage.getItem("folderInQbit") == "true");
+    this.needConfirm = localStorage.getItem("needConfirm") == "null" ? true : (localStorage.getItem("folderInQbit") == "true");
   }
 
   ngOnInit() {
@@ -60,6 +62,7 @@ export class FileBrowserComponent implements OnInit {
 
 
   deleteFile(fileInfo: FileInfo) {
+    if (this.needConfirm == false) {
     this.dialogSrv.openConfirmDialog("File to delete: " + fileInfo.path, "Are you sure you want to delete this file?").afterClosed().subscribe((result) => {
       if (result == true) {
         this.generalService.deleteFile(fileInfo.path).subscribe({
@@ -72,6 +75,16 @@ export class FileBrowserComponent implements OnInit {
         });
       }
     });
+    } else {
+      this.generalService.deleteFile(fileInfo.path).subscribe({
+        next: (data) => {
+          this.fileList = this.fileList!.filter(item => item.path !== fileInfo.path);
+        },
+        error: () => {
+          this.toastrService.error("Error deleting file");
+        }
+      });
+    }
   }
 
   paramsChanged() {
@@ -79,6 +92,7 @@ export class FileBrowserComponent implements OnInit {
     localStorage.setItem("hardlink", this.hardlinkFilter?.toString() ?? "null");
     localStorage.setItem("inQbit", this.inQbitFilter?.toString() ?? "null");
     localStorage.setItem("folderInQbit", this.folderInQbitFilter?.toString() ?? "null");
+    localStorage.setItem("needConfirm", this.needConfirm.toString());
     this.load()
   }
 }
