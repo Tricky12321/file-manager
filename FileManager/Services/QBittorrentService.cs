@@ -97,4 +97,9 @@ public class QBittorrentService
         var cachePath = Path.Combine(BasePath, "qbittorrent_files.json");
         File.WriteAllTextAsync(cachePath, JsonConvert.SerializeObject(output)).GetAwaiter().GetResult();
     }
-}
+
+    public async Task<List<string>> GetTorrentFilesList(bool clearCache)
+    {
+        return await GetTorrentFiles(await GetTorrentList(clearCache).ConfigureAwait(false), clearCache);
+    }
+}   

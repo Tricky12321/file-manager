@@ -24,4 +24,12 @@ export class GeneralService {
   deleteFiles(filesToDelete: string[]) {
     return this.http.post('api/file/deleteMultiple',filesToDelete);
   }
+
+  getTorrentFiles(clearCache: boolean = false) {
+    if (clearCache) {
+      return this.http.get<string[]>('api/qbit/torrentfiles/true');
+    } else {
+      return this.http.get<string[]>('api/qbit/torrentfiles');
+    }
+  }
 }

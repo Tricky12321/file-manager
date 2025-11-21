@@ -16,6 +16,7 @@ import {ServiceWorkerModule} from "@angular/service-worker";
 import {DataTablesModule} from "angular-datatables";
 import {QbitdashboardComponent} from "./modules/qbitdashboard/qbitdashboard.component";
 import {FileBrowserComponent} from "./modules/fileBrowser/fileBrowser.component";
+import {QbitfilesComponent} from "./modules/qbitfiles/qbitfiles.component";
 
 registerLocaleData(localDa, "da");
 
@@ -25,7 +26,8 @@ registerLocaleData(localDa, "da");
     AppComponent,
     IndexComponent,
     QbitdashboardComponent,
-    FileBrowserComponent
+    FileBrowserComponent,
+    QbitfilesComponent
   ],
   imports: [
     BrowserModule,

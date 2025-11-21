@@ -14,4 +14,11 @@ public class QBitController(QBittorrentService qBittorrentService) : ControllerB
     {
         return Ok(await qBittorrentService.GetTorrentList(clearCache));
     }
+    
+    [HttpGet("torrentfiles")]
+    [HttpGet("torrentfiles/{clearCache}")]
+    public async Task<IActionResult> GetTorrentsFiles(bool clearCache = false)
+    {
+        return Ok(await qBittorrentService.GetTorrentFilesList(clearCache));
+    }
 }

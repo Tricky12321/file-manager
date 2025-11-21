@@ -1,0 +1,18 @@
+<h1>Torrent dashboard</h1>
+<button (click)="refreshData()" class="btn btn-secondary">Refresh data</button>
+@if (this.torrentList != null) {
+<table datatable [dtOptions]="dtOptions" class="table table-bordered table-striped table-hover modern-table">
+  <thead>
+  <tr>
+    <th>File</th>
+  </tr>
+  </thead>
+  <tbody>
+    @for (torrentInfo of torrentList; track torrentInfo) {
+      <tr>
+        <td>{{torrentInfo}}</td>
+      </tr>
+    }
+  </tbody>
+</table>
+}
