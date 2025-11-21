@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.Configuration;
 using System.IO;
@@ -31,6 +32,7 @@ public class QBittorrentService
             var cachePath = Path.Combine(BasePath, "qbittorrent_cache.json");
             if (clearCache)
             {
+                Console.WriteLine("Clearing qBittorrent cache");
                 if (File.Exists(cachePath))
                 {
                     File.Delete(cachePath);
@@ -39,10 +41,12 @@ public class QBittorrentService
 
             if (File.Exists(cachePath))
             {
+                Console.WriteLine("Reading qBittorrent cache from disk");
                 return JsonConvert.DeserializeObject<List<TorrentInfo>>(File.ReadAllText(cachePath));
             }
 
             var torrents = Client.GetTorrentsAsync().GetAwaiter().GetResult();
+            Console.WriteLine($"Torrents fetched from qBittorrent: {torrents.Count}");
             File.WriteAllTextAsync(cachePath, JsonConvert.SerializeObject(torrents)).GetAwaiter().GetResult();
             return torrents.ToList();
         }
@@ -55,6 +59,7 @@ public class QBittorrentService
             var cachePath = Path.Combine(BasePath, "qbittorrent_files.json");
             if (clearCache)
             {
+                Console.WriteLine("Clearing qBittorrent files cache");
                 if (File.Exists(cachePath))
                 {
                     File.Delete(cachePath);
@@ -63,6 +68,7 @@ public class QBittorrentService
 
             if (File.Exists(cachePath))
             {
+                Console.WriteLine("Reading qBittorrent files cache from disk");
                 return JsonConvert.DeserializeObject<List<string>>(File.ReadAllText(cachePath));
             }
 
@@ -76,9 +82,9 @@ public class QBittorrentService
                     output.Add(fullPath);
                 }
             }
-
+            Console.WriteLine($"Torrent files fetched from qBittorrent: {output.Count}");
             UpdateAllFilesCache(output);
-             return output;
+            return output;
         }
     }
 

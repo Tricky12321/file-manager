@@ -3,6 +3,7 @@ services:
     container_name: filemanager
     volumes:
       - /mnt/filesystem/storage/torrent:/torrent
+      - /docker/data/filemanager/qbit_data:/qbit_data
     user: 0:0
     build:
       context: .
