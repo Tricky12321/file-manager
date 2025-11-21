@@ -41,10 +41,6 @@ public class RequestMiddleware
         {
             // Ignore websocket exceptions
         }
-        catch (IOException e)
-        {
-            // Handle IOException separately, often related to client disconnects
-        }
         catch (Exception e)
         {
             _logger.LogError(e, "{Name} | {Method}", GetType().Name, MethodBase.GetCurrentMethod()?.DeclaringType?.Name);
