@@ -101,6 +101,7 @@ public class FileSystemService
             }
             catch
             {
+                Console.WriteLine("Unable to read file: " + file);
                 // skip unreadable files
             }
         }
@@ -161,7 +162,11 @@ public class FileSystemService
         result = result.Where(file => (hardlink == null || file.IsHardlink == hardlink)
             && (inQbit == null || file.InQbit == inQbit)
             && (folderInQbit == null || file.FolderInQbit == folderInQbit)).ToList();
-        
+        Console.WriteLine("Caching file scan results to " + cachePath);
+        Console.WriteLine("Total results: " + result.Count);
+        Console.WriteLine("Total scanned files: " + scanned);
+        Console.WriteLine("Total In Qbittorrent: " + result.Count(f => f.InQbit));
+        Console.WriteLine("Total Folder In Qbittorrent: " + result.Count(f => f.FolderInQbit));
         File.WriteAllText(cachePath, JsonConvert.SerializeObject(result));
         return result;
     }
