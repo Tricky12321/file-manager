@@ -1,7 +1,5 @@
 using System;
-using System.IdentityModel.Tokens.Jwt;
 using System.Text;
-using Microsoft.IdentityModel.Tokens;
 
 namespace FileManager.Authentication;
 
