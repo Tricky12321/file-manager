@@ -32,4 +32,5 @@ WORKDIR /app
 
 COPY --from=publish /app/publish .
 RUN cp -R /app/ClientApp/dist/browser /app/wwwroot
+RUN mkdir /qbit_data
 CMD ["dotnet", "FileManager.dll"]
