@@ -144,7 +144,6 @@ namespace FileManager
                 {
                     spa.Options.DefaultPageStaticFileOptions = new StaticFileOptions
                     {
-                        FileProvider = new PhysicalFileProvider("/app/ClientApp/dist/browser"),
                         OnPrepareResponse = context => { context.Context.Response.Headers.Add("Cache-Control", "max-age=3000, must-revalidate"); }
                     };
                 }
