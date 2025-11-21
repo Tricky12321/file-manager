@@ -120,4 +120,15 @@ export class FileBrowserComponent implements OnInit {
     localStorage.setItem("needConfirm", this.needConfirm.toString());
     this.load()
   }
+
+  toggleSelectedFiles() {
+    // if any selected, select none, else select all
+    const anySelected = this.fileList!.some(file => file.selected);
+    if (anySelected) {
+      this.fileList!.forEach(file => file.selected = false);
+    } else {
+      this.fileList!.forEach(file => file.selected = true);
+    }
+
+  }
 }
