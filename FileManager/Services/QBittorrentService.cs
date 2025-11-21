@@ -42,7 +42,9 @@ public class QBittorrentService
             if (File.Exists(cachePath))
             {
                 Console.WriteLine("Reading qBittorrent cache from disk");
-                return JsonConvert.DeserializeObject<List<TorrentInfo>>(File.ReadAllText(cachePath));
+                var result =  JsonConvert.DeserializeObject<List<TorrentInfo>>(File.ReadAllText(cachePath));
+                Console.WriteLine($"Torrents fetched from qBittorrent files: {result.Count}");
+                return result;
             }
 
             var torrents = Client.GetTorrentsAsync().GetAwaiter().GetResult();
@@ -69,7 +71,9 @@ public class QBittorrentService
             if (File.Exists(cachePath))
             {
                 Console.WriteLine("Reading qBittorrent files cache from disk");
-                return JsonConvert.DeserializeObject<List<string>>(File.ReadAllText(cachePath));
+                var result =  JsonConvert.DeserializeObject<List<string>>(File.ReadAllText(cachePath));
+                Console.WriteLine($"Torrents fetched from qBittorrent files: {result.Count}");
+                return result;
             }
 
             var output = new List<string>();

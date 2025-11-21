@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using FileInfo = FileManager.Models.FileInfo;
 
 namespace FileManager.Services;
@@ -63,6 +64,21 @@ public class FileSystemService
         var qbitAllFiles = _qbittorrentService.GetTorrentFiles(qbitFiles, clearCache).GetAwaiter().GetResult();
         var inodeMap = new Dictionary<(ulong dev, ulong ino), List<(string path, long size)>>();
         int scanned = 0;
+        // sha1 hash the directory path for cache
+        var directoryHashed = Convert.ToHexString(SHA1.HashData(System.Text.Encoding.UTF8.GetBytes(directoryPath)));
+        var cachePath = "/qbit_data/"+ directoryHashed + "_file_cache.json";
+        if (clearCache)
+        {
+            if (File.Exists(cachePath))
+            {
+                File.Delete(cachePath);
+            }
+        }
+        
+        if (File.Exists(cachePath))
+        {
+            return JsonConvert.DeserializeObject<List<FileInfo>>(File.ReadAllText(cachePath));
+        }
 
         // Step 1: Scan all files and collect size + inode
         foreach (var file in Directory.EnumerateFiles(directoryPath, "*", SearchOption.AllDirectories))
@@ -145,6 +161,8 @@ public class FileSystemService
         result = result.Where(file => (hardlink == null || file.IsHardlink == hardlink)
             && (inQbit == null || file.InQbit == inQbit)
             && (folderInQbit == null || file.FolderInQbit == folderInQbit)).ToList();
+        
+        File.WriteAllText(cachePath, JsonConvert.SerializeObject(result));
         return result;
     }
 
