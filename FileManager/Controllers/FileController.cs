@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using FileManager.Models;
 using FileManager.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -25,6 +26,13 @@ public class FileController : ControllerBase
     public IActionResult DeleteFile([FromBody] DeleteFileDto deleteFileDto)
     {
         _fileSystemService.DeleteFile(deleteFileDto.Path);
+        return Ok();
+    }
+    
+    [HttpPost("deleteMultiple")]
+    public IActionResult DeleteFile([FromBody] List<string> deleteMultiple)
+    {
+        _fileSystemService.DeleteMultipleFiles(deleteMultiple);
         return Ok();
     }
 }

@@ -20,4 +20,8 @@ export class GeneralService {
   deleteFile(path: string) {
     return this.http.post('api/file/delete',{path:path});
   }
+
+  deleteFiles(filesToDelete: string[]) {
+    return this.http.post('api/file/deleteMultiple',filesToDelete);
+  }
 }

@@ -10,4 +10,5 @@ export interface FileInfo {
   folderInQbit: boolean;
   sizeMb: number;
   sizeGb: number;
+  selected: boolean;
 }

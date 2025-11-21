@@ -49,6 +49,9 @@ export class FileBrowserComponent implements OnInit {
       this.fileService.getFiles(this.filePath, this.hardlinkFilter, this.inQbitFilter, this.folderInQbitFilter, clearCache).subscribe({
         next: (data) => {
           this.fileList = data;
+          this.fileList.map((file: FileInfo) => {
+            file.selected = false;
+          })
           this.loading = false;
         },
         error: () => {
@@ -85,6 +88,28 @@ export class FileBrowserComponent implements OnInit {
         }
       });
     }
+  }
+
+  deleteSelectedFiles() {
+    const filesToDelete = this.fileList!.filter(file => file.selected).map(x => x.path);
+    if (filesToDelete.length == 0) {
+      this.toastrService.info("No files selected");
+      return;
+    }
+    this.dialogSrv.openConfirmDialog("Are you sure you want to delete all selected files?").afterClosed().subscribe((result) => {
+      if (result == true) {
+          this.generalService.deleteFiles(filesToDelete).subscribe({
+          next: (data) => {
+            this.fileList = this.fileList!.filter(item => !filesToDelete.includes(item.path));
+          },
+          error: () => {
+            this.toastrService.error("Error deleting files, please refresh and try again");
+          }
+        });
+      } else {
+        this.toastrService.warning("Not deleting files");
+      }
+    });
   }
 
   paramsChanged() {

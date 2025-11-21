@@ -222,4 +222,18 @@ public class FileSystemService
         throw new FileNotFoundException($"File {path} not found.");
     }
 
+    public void DeleteMultipleFiles(List<string> deleteMultiple)
+    {
+        try
+        {
+            foreach (var deleteFile in deleteMultiple)
+            {
+                DeleteFile(deleteFile);
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+    }
 }
