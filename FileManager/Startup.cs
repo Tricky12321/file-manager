@@ -105,6 +105,7 @@ namespace FileManager
             }*/
 
             app.UseSpaStaticFiles();
+            app.UseStaticFiles();
             app.UseMiddleware<RequestMiddleware>();
             app.UseCors("default");
             app.UseRouting();
