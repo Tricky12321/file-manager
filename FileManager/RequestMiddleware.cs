@@ -28,7 +28,7 @@ public class RequestMiddleware
             context.Response.Headers["Pragma"] = "no-cache";
             context.Response.Headers["Expires"] = "-1";
         }
-
+        Console.WriteLine($"Request: {context.Request.Method} {context.Request.Path}");
         try
         {
             await _next(context);
