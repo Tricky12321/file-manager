@@ -77,7 +77,8 @@ public class FileSystemService
         
         if (File.Exists(cachePath))
         {
-            return JsonConvert.DeserializeObject<List<FileInfo>>(File.ReadAllText(cachePath));
+            return FilterResults(hardlink, inQbit, folderInQbit,
+                JsonConvert.DeserializeObject<List<FileInfo>>(File.ReadAllText(cachePath)));
         }
 
         // Step 1: Scan all files and collect size + inode
@@ -158,17 +159,22 @@ public class FileSystemService
                 });
             }
         }
-        
-        result = result.Where(file => (hardlink == null || file.IsHardlink == hardlink)
-            && (inQbit == null || file.InQbit == inQbit)
-            && (folderInQbit == null || file.FolderInQbit == folderInQbit)).ToList();
         Console.WriteLine("Caching file scan results to " + cachePath);
         Console.WriteLine("Total results: " + result.Count);
         Console.WriteLine("Total scanned files: " + scanned);
         Console.WriteLine("Total In Qbittorrent: " + result.Count(f => f.InQbit));
         Console.WriteLine("Total Folder In Qbittorrent: " + result.Count(f => f.FolderInQbit));
         File.WriteAllText(cachePath, JsonConvert.SerializeObject(result));
+        result = FilterResults(hardlink, inQbit, folderInQbit, result);
+        
         return result;
+    }
+
+    private static List<FileInfo> FilterResults(bool? hardlink, bool? inQbit, bool? folderInQbit, List<FileInfo> result)
+    {
+        return result.Where(file => (hardlink == null || file.IsHardlink == hardlink)
+                                    && (inQbit == null || file.InQbit == inQbit)
+                                    && (folderInQbit == null || file.FolderInQbit == folderInQbit)).ToList();
     }
 
     static string ComputePartialHash(string filePath, int bytesToRead)
