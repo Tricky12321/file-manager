@@ -91,7 +91,7 @@ export class FileBrowserComponent implements OnInit {
     if (!this.needConfirm) {
       this.dialogSrv.openConfirmDialog("File to delete: " + fileInfo.path, "Are you sure you want to delete this file?").afterClosed().subscribe((result) => {
         if (result == true) {
-          this.generalService.deleteFile(fileInfo.path).subscribe({
+          this.generalService.deleteFile(fileInfo.path, this.filePath).subscribe({
             next: (data) => {
               this.load()
             },

@@ -213,8 +213,10 @@ public class FileSystemService
         }
     }
 
-    public void DeleteFile(string path)
+    public void DeleteFile(string path, string directoryPath)
     {
+        
+        
         if (path.IsNullOrWhitespace())
         {
             throw new ArgumentException("Path cannot be null or empty.", nameof(path));
@@ -231,6 +233,15 @@ public class FileSystemService
             Console.WriteLine($"Deleting file {path}");
             File.Delete(path);
             Console.WriteLine($"Deleted file {path}");
+            var directoryHashed = directoryPath.Sha1Hash();
+            var cachePath = "/qbit_data/" + directoryHashed + "_file_cache.json";
+            var data = JsonConvert.DeserializeObject<List<FileInfo>>(File.ReadAllText(cachePath));
+            // Remove from cache
+            data = data.Where(f => f.Path != path).ToList();
+            File.WriteAllText(cachePath, JsonConvert.SerializeObject(data));
+            
+            
+            
             var qbitAllFiles = _qbittorrentService.GetTorrentFiles(null).GetAwaiter().GetResult();
             var qbitFile = qbitAllFiles.FirstOrDefault(f => f == path);
             if (qbitFile != null)
@@ -250,13 +261,13 @@ public class FileSystemService
         throw new FileNotFoundException($"File {path} not found.");
     }
 
-    public void DeleteMultipleFiles(List<string> deleteMultiple)
+    public void DeleteMultipleFiles(List<string> deleteMultiple, string folderPath)
     {
         try
         {
             foreach (var deleteFile in deleteMultiple)
             {
-                DeleteFile(deleteFile);
+                DeleteFile(deleteFile, folderPath);
             }
         }
         catch (Exception e)

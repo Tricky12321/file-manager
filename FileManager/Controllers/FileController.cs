@@ -35,16 +35,16 @@ public class FileController : ControllerBase
     }
 
     [HttpPost("delete")]
-    public IActionResult DeleteFile([FromBody] DeleteFileDto deleteFileDto)
+    public IActionResult DeleteFile([FromBody] DeleteFileDto deleteFileDto, [FromQuery] string folderPath)
     {
-        _fileSystemService.DeleteFile(deleteFileDto.Path);
+        _fileSystemService.DeleteFile(deleteFileDto.Path, folderPath);
         return Ok();
     }
 
     [HttpPost("deleteMultiple")]
-    public IActionResult DeleteFile([FromBody] List<string> deleteMultiple)
+    public IActionResult DeleteFile([FromBody] List<string> deleteMultiple, [FromQuery] string folderPath)
     {
-        _fileSystemService.DeleteMultipleFiles(deleteMultiple);
+        _fileSystemService.DeleteMultipleFiles(deleteMultiple, folderPath);
         return Ok();
     }
 }

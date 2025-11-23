@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Security.Cryptography;
 using FileManager.Models;
 using FileInfo = System.IO.FileInfo;
 
@@ -101,5 +102,10 @@ public static class Extensions
             TotalCount = totalResults,
         };
         return output;
+    }
+
+    public static string Sha1Hash(this string input)
+    {
+        return Convert.ToHexString(SHA1.HashData(System.Text.Encoding.UTF8.GetBytes(input)));
     }
 }
