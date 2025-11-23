@@ -22,6 +22,14 @@ public class FileController : ControllerBase
         return Ok(_fileSystemService.GetFilesInDirectory(path, hardlink, inQbit, folderInQbit, clearCache == true));
     }
     
+    [HttpPost("getFilesPost")]
+    public IActionResult GetFilesPost([FromBody] TableRequestDto tableRequest, [FromQuery] string path, [FromQuery] bool? hardlink = null, [FromQuery] bool? inQbit= null, [FromQuery] bool? folderInQbit= null, [FromQuery] bool? clearCache= null)
+    {
+        var results = _fileSystemService.GetFilesInDirectory(path, hardlink, inQbit, folderInQbit, clearCache == true)
+            .ToTableResponse(tableRequest);
+        return Ok(results);
+    }
+    
     [HttpPost("delete")]
     public IActionResult DeleteFile([FromBody] DeleteFileDto deleteFileDto)
     {

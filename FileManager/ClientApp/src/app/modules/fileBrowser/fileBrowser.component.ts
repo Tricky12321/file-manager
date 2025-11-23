@@ -1,10 +1,13 @@
-import {Component, OnInit,} from '@angular/core';
+import {Component, OnInit, ViewChild,} from '@angular/core';
 import {TorrentInfo} from "../../models/torrentInfo";
 import {GeneralService} from "../../shared/services/general.service";
 import {FileService} from "../../shared/services/file.service";
 import {FileInfo} from 'src/app/models/fileInfo';
 import {DialogService} from "../../shared/services/dialogs/dialog.service";
 import {ToastrService} from "ngx-toastr";
+import {SimpleTableComponent, TableRequest} from "../simpleTable/simple-table.component";
+import {Observable} from "rxjs";
+import {HttpClient} from "@angular/common/http";
 
 
 @Component({
@@ -25,12 +28,55 @@ export class FileBrowserComponent implements OnInit {
   public folderInQbitFilter: boolean | null = null;
   public needConfirm: boolean = true;
 
-  constructor(public generalService: GeneralService, public fileService: FileService, public dialogSrv: DialogService, public toastrService: ToastrService) {
+  // Variable to link to simple-table component, to call function in the component
+  @ViewChild(SimpleTableComponent) simpleTableComponent: SimpleTableComponent | undefined;
+
+  constructor(public http: HttpClient, public generalService: GeneralService, public fileService: FileService, public dialogSrv: DialogService, public toastrService: ToastrService) {
 
     this.hardlinkFilter = localStorage.getItem("hardlink") == "null" ? null : (localStorage.getItem("hardlink") == "true");
     this.inQbitFilter = localStorage.getItem("inQbit") == "null" ? null : (localStorage.getItem("inQbit") == "true");
     this.folderInQbitFilter = localStorage.getItem("folderInQbit") == "null" ? null : (localStorage.getItem("folderInQbit") == "true");
     this.needConfirm = localStorage.getItem("needConfirm") == "null" ? true : (localStorage.getItem("folderInQbit") == "true");
+  }
+
+  getTableData(tableRequest: TableRequest) {
+    let hardlink = this.hardlinkFilter?.toString() !== "null" ? this.hardlinkFilter : null;
+    let inQbit = this.inQbitFilter?.toString() !== "null" ? this.inQbitFilter : null;
+    let folderInQbit = this.folderInQbitFilter?.toString() !== "null" ? this.folderInQbitFilter : null;
+    var queryParams = "?path=" + this.filePath;
+    if (hardlink !== null && hardlink !== undefined) {
+      queryParams += "&hardlink=" + hardlink;
+    }
+    if (inQbit !== null) {
+      queryParams += "&inQbit=" + inQbit;
+    }
+    if (folderInQbit !== null) {
+      queryParams += "&folderInQbit=" + folderInQbit;
+    }
+    /*
+    if (clearCache !== null) {
+      queryParams += "&clearCache=" + clearCache;
+    }
+    */
+    return this.http.post<FileInfo[]>('api/file/getFilesPost' + queryParams, tableRequest);
+    //return this.fileService.getFilesPost(this.filePath, tableRequest, this.hardlinkFilter, this.inQbitFilter, this.folderInQbitFilter);
+  }
+
+  buildUrl() {
+    let hardlink = this.hardlinkFilter?.toString() !== "null" ? this.hardlinkFilter : null;
+    let inQbit = this.inQbitFilter?.toString() !== "null" ? this.inQbitFilter : null;
+    let folderInQbit = this.folderInQbitFilter?.toString() !== "null" ? this.folderInQbitFilter : null;
+    var queryParams = "?path=" + this.filePath;
+    if (hardlink !== null && hardlink !== undefined) {
+      queryParams += "&hardlink=" + hardlink;
+    }
+    if (inQbit !== null) {
+      queryParams += "&inQbit=" + inQbit;
+    }
+    if (folderInQbit !== null) {
+      queryParams += "&folderInQbit=" + folderInQbit;
+    }
+    return 'api/file/getFilesPost' + queryParams;
   }
 
   ngOnInit() {
@@ -39,9 +85,9 @@ export class FileBrowserComponent implements OnInit {
     } else if (window.location.pathname == "/film") {
       this.filePath = "/torrent/Film"
     }
-    this.load();
+    //this.load();
   }
-
+/*
   load(clearCache: boolean = false) {
     if (!this.loading) {
       this.fileList = null;
@@ -60,8 +106,8 @@ export class FileBrowserComponent implements OnInit {
         }
       });
     }
-
   }
+*/
 
 
   deleteFile(fileInfo: FileInfo) {
@@ -118,9 +164,12 @@ export class FileBrowserComponent implements OnInit {
     localStorage.setItem("inQbit", this.inQbitFilter?.toString() ?? "null");
     localStorage.setItem("folderInQbit", this.folderInQbitFilter?.toString() ?? "null");
     localStorage.setItem("needConfirm", this.needConfirm.toString());
-    this.load()
+    if (this.simpleTableComponent != null) {
+      this.simpleTableComponent.update();
+    }
+    //this.load()
   }
-
+/*
   toggleSelectedFiles() {
     // if any selected, select none, else select all
     const anySelected = this.fileList!.some(file => file.selected);
@@ -131,4 +180,5 @@ export class FileBrowserComponent implements OnInit {
     }
 
   }
+  */
 }

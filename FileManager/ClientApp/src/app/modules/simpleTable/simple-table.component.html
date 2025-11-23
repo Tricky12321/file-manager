@@ -1,0 +1,51 @@
+<div class="table-responsive me-2">
+    <div class="simple-table-toolbar mb-2">
+        <input
+            #searchInput
+            type="text"
+            class="form-control"
+            placeholder="Search..."
+            (input)="onSearchChange(searchInput.value)"
+        />
+    </div>
+
+    <table class="table table-striped">
+        <!-- Projected header -->
+        <ng-content select="thead"></ng-content>
+        <tbody>
+            @if (!isLoading) {
+                @for (row of data; track row) {
+                    <ng-container [ngTemplateOutlet]="template" [ngTemplateOutletContext]="{ row: row }"></ng-container>
+                }
+            } @else {
+                <tr>
+                    <td [attr.colspan]="100">{{ loadingText }}</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <div class="row">
+        <div class="col-1">
+            <div class="form-group">
+                <label>Page size</label>
+                <select class="form-select" [(ngModel)]="pageSize" (change)="onPageSizeChange()">
+                    @for (pageSize of this.pageSizeOptions; track pageSize) {
+                        <option [value]="pageSize">{{ pageSize }}</option>
+                    }
+                </select>
+            </div>
+        </div>
+        <div class="col-2">
+            <p>Showing page {{ currentPage }} of {{ this.totalPages }}</p>
+            <p>Showing {{ this.startIndex }} - {{ this.endIndex }} of {{ this.totalItemCount }} items</p>
+        </div>
+        <div class="col-9 text-end">
+            <button class="btn btn-secondary me-2" (click)="goToPreviousPage()" [disabled]="currentPage === 1">
+                Previous
+            </button>
+            <button class="btn btn-secondary" (click)="goToNextPage()" [disabled]="currentPage === totalPages">
+                Next
+            </button>
+        </div>
+    </div>
+</div>

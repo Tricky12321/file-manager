@@ -6,6 +6,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using FileManager.Models;
 using Newtonsoft.Json;
 using FileInfo = FileManager.Models.FileInfo;
 
@@ -169,6 +170,7 @@ public class FileSystemService
         
         return result;
     }
+    
 
     private static List<FileInfo> FilterResults(bool? hardlink, bool? inQbit, bool? folderInQbit, List<FileInfo> result)
     {
@@ -236,4 +238,5 @@ public class FileSystemService
             Console.WriteLine(e);
         }
     }
+
 }

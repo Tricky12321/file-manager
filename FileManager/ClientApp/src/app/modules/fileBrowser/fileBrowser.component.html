@@ -40,21 +40,26 @@
         <div class="col-3">
           <div class="form-group">
             <label for="needConfirm">Need Confirmation before delete</label>
-            <input type="checkbox" id="needConfirm" class="form-check-input" [(ngModel)]="this.needConfirm" (change)="paramsChanged()" />
+            <input type="checkbox" id="needConfirm" class="form-check-input" [(ngModel)]="this.needConfirm"
+                   (change)="paramsChanged()"/>
           </div>
           <div>
             <button class="btn btn-primary ms-2" (click)="deleteSelectedFiles()">Delete selected files</button>
+            <!--
             <button class="btn btn-secondary ms-2" (click)="toggleSelectedFiles()">Toggle selected files</button>
+            -->
           </div>
         </div>
       </div>
     }
   </div>
   <div class="col-3">
+    <!--
     <button class="btn btn-secondary mt-4" (click)="this.load(true)">Refresh data</button>
+    -->
   </div>
 </div>
-@if (this.fileList != null && !this.loading) {
+@if (this.fileList != null && !this.loading && false) {
   <table datatable [dtOptions]="dtOptions" class="table table-bordered table-striped table-hover modern-table">
     <thead>
     <tr>
@@ -71,7 +76,7 @@
       @for (fileInfo of fileList; track fileInfo.path) {
         <tr>
           <td>
-            <input type="checkbox" [(ngModel)]="fileInfo.selected" />
+            <input type="checkbox" [(ngModel)]="fileInfo.selected"/>
           </td>
           <td>{{ fileInfo.path }}</td>
           <td
@@ -96,4 +101,53 @@
       }
     </tbody>
   </table>
+}
+
+
+@if (this.fileService != null) {
+  <simple-table
+    [serverSide]="true"
+    [url]="this.buildUrl()"
+    [template]="rowTemplateServer"
+    [loadingText]="'Henter personer...'"
+  >
+    <thead>
+    <tr>
+      <th></th>
+      <th data-column-key="Path" >Path</th>
+      <th data-column-key="Size" >Size</th>
+      <th data-column-key="IsHardlink" >Hardlink</th>
+      <th data-column-key="InQbit" >In Qbit</th>
+      <th data-column-key="FolderInQbit" >Folder in Qbit</th>
+      <th></th>
+    </tr>
+    </thead>
+  </simple-table>
+
+  <ng-template #rowTemplateServer let-fileInfo="row">
+    <tr>
+      <td>
+        <input type="checkbox" [(ngModel)]="fileInfo.selected"/>
+      </td>
+      <td>{{ fileInfo.path }}</td>
+      <td
+        [attr.data-sort]="fileInfo.size">{{ fileInfo.sizeGb > 1 ? fileInfo.sizeGb + " GB" : fileInfo.sizeMb + " MB" }}
+      </td>
+      <td [attr.data-sort]="fileInfo.isHardlink">
+        <i class="fa" [class.text-success]="!fileInfo.isHardlink" [class.fa-times]="!fileInfo.isHardlink"
+           [class.text-danger]="fileInfo.isHardlink" [class.fa-check]="fileInfo.isHardlink"></i>
+      </td>
+      <td>
+        <i class="fa" [class.text-danger]="!fileInfo.inQbit" [class.fa-times]="!fileInfo.inQbit"
+           [class.text-success]="fileInfo.inQbit" [class.fa-check]="fileInfo.inQbit"></i>
+      </td>
+      <td>
+        <i class="fa" [class.text-danger]="!fileInfo.folderInQbit" [class.fa-times]="!fileInfo.folderInQbit"
+           [class.text-success]="fileInfo.folderInQbit" [class.fa-check]="fileInfo.folderInQbit"></i>
+      </td>
+      <td>
+        <button class="btn btn-danger" (click)="deleteFile(fileInfo)">Delete</button>
+      </td>
+    </tr>
+  </ng-template>
 }

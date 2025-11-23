@@ -1,4 +1,9 @@
-using System.IO;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using FileManager.Models;
+using FileInfo = System.IO.FileInfo;
 
 namespace FileManager;
 
@@ -8,9 +13,93 @@ public static class Extensions
     {
         return new FileInfo(path).Length;
     }
-    
+
     public static bool IsNullOrWhitespace(this string path)
     {
         return string.IsNullOrWhiteSpace(path);
+    }
+
+    public static void GetPropertyValues(Object obj)
+    {
+        Type t = obj.GetType();
+        Console.WriteLine("Type is: {0}", t.Name);
+        PropertyInfo[] props = t.GetProperties();
+        Console.WriteLine("Properties (N = {0}):",
+            props.Length);
+        foreach (var prop in props)
+        {
+            if (prop.GetIndexParameters().Length == 0)
+            {
+                Console.WriteLine("   {0} ({1}): {2}", prop.Name, prop.PropertyType.Name, prop.GetValue(obj));
+            }
+
+            else
+            {
+                Console.WriteLine("   {0} ({1}): <Indexed>", prop.Name, prop.PropertyType.Name);
+            }
+        }
+    }
+    
+    public static TableResult<T> ToTableResponse<T>(this List<T> results, TableRequestDto tableRequest = null)
+    {
+        var totalResults = results.Count;
+        if (tableRequest == null)
+        {
+            tableRequest = new TableRequestDto()
+            {
+                PageNumber = 1,
+                PageSize = totalResults,
+                Search = string.Empty,
+                SortColumn = null,
+                SortDirection = "asc"
+            };
+        }
+        // Apply search filter
+        if (!string.IsNullOrWhiteSpace(tableRequest.Search))
+        {
+            // Search all fields that are strings or can be cast to string, should use reflection to do this
+            results = results.Where(r =>
+            {
+                var properties = r.GetType().GetProperties();
+                foreach (var prop in properties)
+                {
+                    if (prop.PropertyType == typeof(string) || prop.PropertyType.IsValueType)
+                    {
+                        var value = prop.GetValue(r)?.ToString();
+                        if (value != null && value.Contains(tableRequest.Search, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }).ToList();
+        }
+
+
+        // Apply sorting
+        if (tableRequest.SortColumn != null)
+        {
+            //Extensions.GetPropertyValues(results.First());
+            results = tableRequest.SortDirection == "desc"
+                ? results.OrderByDescending(r =>
+                {
+                    return r.GetType().GetProperty(tableRequest.SortColumn)?.GetValue(r);
+                }).ToList()
+                : results.OrderBy(r =>
+                {
+                    return r.GetType().GetProperty(tableRequest.SortColumn)?.GetValue(r);
+                }).ToList();
+        }
+        // Apply pagination
+        results = results.Skip((tableRequest.PageNumber - 1) * tableRequest.PageSize)
+            .Take(tableRequest.PageSize)
+            .ToList();
+        var output = new TableResult<T>()
+        {
+            Items = results,
+            TotalCount = totalResults,
+        };
+        return output;
     }
 }

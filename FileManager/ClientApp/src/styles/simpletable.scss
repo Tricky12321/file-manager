@@ -1,0 +1,20 @@
+.simple-table > thead > tr > th.sortable::after {
+  content: "⇅";
+  opacity: 0.3;
+  margin-left: 4px;
+  font-size: 0.8rem;
+}
+
+/* Asc active */
+.simple-table > thead > tr > th.sorted-asc::after {
+  content: "↑";
+  opacity: 1;
+}
+
+/* Desc active */
+.simple-table > thead > tr > th.sorted-desc::after {
+  content: "↓";
+  opacity: 1;
+}
+
+

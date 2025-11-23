@@ -17,6 +17,8 @@ import {DataTablesModule} from "angular-datatables";
 import {QbitdashboardComponent} from "./modules/qbitdashboard/qbitdashboard.component";
 import {FileBrowserComponent} from "./modules/fileBrowser/fileBrowser.component";
 import {QbitfilesComponent} from "./modules/qbitfiles/qbitfiles.component";
+import {SimpleTableComponent} from "./modules/simpleTable/simple-table.component";
+import {TypedTemplateDirective} from "./models/typedTemplate";
 
 registerLocaleData(localDa, "da");
 
@@ -27,7 +29,8 @@ registerLocaleData(localDa, "da");
     IndexComponent,
     QbitdashboardComponent,
     FileBrowserComponent,
-    QbitfilesComponent
+    QbitfilesComponent,
+    SimpleTableComponent
   ],
   imports: [
     BrowserModule,
@@ -45,6 +48,7 @@ registerLocaleData(localDa, "da");
       registrationStrategy: "registerWhenStable:5000",
     }),
     DataTablesModule,
+    TypedTemplateDirective,
   ],
   providers: [
     GlobalFunctionsService,
