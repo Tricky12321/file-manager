@@ -87,47 +87,48 @@ export class FileBrowserComponent implements OnInit {
     }
     //this.load();
   }
-/*
-  load(clearCache: boolean = false) {
-    if (!this.loading) {
-      this.fileList = null;
-      this.loading = true;
-      this.fileService.getFiles(this.filePath, this.hardlinkFilter, this.inQbitFilter, this.folderInQbitFilter, clearCache).subscribe({
-        next: (data) => {
-          this.fileList = data;
-          this.fileList.map((file: FileInfo) => {
-            file.selected = false;
-          })
-          this.loading = false;
-        },
-        error: () => {
-          this.toastrService.error("Error loading files");
-          this.loading = false;
-        }
-      });
+
+  /*
+    load(clearCache: boolean = false) {
+      if (!this.loading) {
+        this.fileList = null;
+        this.loading = true;
+        this.fileService.getFiles(this.filePath, this.hardlinkFilter, this.inQbitFilter, this.folderInQbitFilter, clearCache).subscribe({
+          next: (data) => {
+            this.fileList = data;
+            this.fileList.map((file: FileInfo) => {
+              file.selected = false;
+            })
+            this.loading = false;
+          },
+          error: () => {
+            this.toastrService.error("Error loading files");
+            this.loading = false;
+          }
+        });
+      }
     }
-  }
-*/
+  */
 
 
   deleteFile(fileInfo: FileInfo) {
     if (this.needConfirm == false) {
-    this.dialogSrv.openConfirmDialog("File to delete: " + fileInfo.path, "Are you sure you want to delete this file?").afterClosed().subscribe((result) => {
-      if (result == true) {
-        this.generalService.deleteFile(fileInfo.path).subscribe({
-          next: (data) => {
-            this.fileList = this.fileList!.filter(item => item.path !== fileInfo.path);
-          },
-          error: () => {
-            this.toastrService.error("Error deleting file");
-          }
-        });
-      }
-    });
+      this.dialogSrv.openConfirmDialog("File to delete: " + fileInfo.path, "Are you sure you want to delete this file?").afterClosed().subscribe((result) => {
+        if (result == true) {
+          this.generalService.deleteFile(fileInfo.path).subscribe({
+            next: (data) => {
+              this.simpleTableComponent!.update();
+            },
+            error: () => {
+              this.toastrService.error("Error deleting file");
+            }
+          });
+        }
+      });
     } else {
       this.generalService.deleteFile(fileInfo.path).subscribe({
         next: (data) => {
-          this.fileList = this.fileList!.filter(item => item.path !== fileInfo.path);
+          this.simpleTableComponent!.update();
         },
         error: () => {
           this.toastrService.error("Error deleting file");
@@ -144,9 +145,9 @@ export class FileBrowserComponent implements OnInit {
     }
     this.dialogSrv.openConfirmDialog("Are you sure you want to delete all selected files?").afterClosed().subscribe((result) => {
       if (result == true) {
-          this.generalService.deleteFiles(filesToDelete).subscribe({
+        this.generalService.deleteFiles(filesToDelete).subscribe({
           next: (data) => {
-            this.fileList = this.fileList!.filter(item => !filesToDelete.includes(item.path));
+            this.simpleTableComponent!.update();
           },
           error: () => {
             this.toastrService.error("Error deleting files, please refresh and try again");
@@ -169,16 +170,17 @@ export class FileBrowserComponent implements OnInit {
     }
     //this.load()
   }
-/*
-  toggleSelectedFiles() {
-    // if any selected, select none, else select all
-    const anySelected = this.fileList!.some(file => file.selected);
-    if (anySelected) {
-      this.fileList!.forEach(file => file.selected = false);
-    } else {
-      this.fileList!.forEach(file => file.selected = true);
-    }
 
-  }
-  */
+  /*
+    toggleSelectedFiles() {
+      // if any selected, select none, else select all
+      const anySelected = this.fileList!.some(file => file.selected);
+      if (anySelected) {
+        this.fileList!.forEach(file => file.selected = false);
+      } else {
+        this.fileList!.forEach(file => file.selected = true);
+      }
+
+    }
+    */
 }
