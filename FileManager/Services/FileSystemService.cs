@@ -190,9 +190,9 @@ public class FileSystemService
         return result.Where(file => (hardlink == null || file.IsHardlink == hardlink)
                                     && (inQbit == null || file.InQbit == inQbit)
                                     && (folderInQbit == null || file.FolderInQbit == folderInQbit)
-                                    && (hashDuplicate == null || (hashDuplicate == true)
+                                    && (hashDuplicate == null || (hashDuplicate == true
                                         ? file.HashDuplicate
-                                        : file.HashDuplicate == false)
+                                        : file.HashDuplicate == false))
                                     ).ToList();
     }
 

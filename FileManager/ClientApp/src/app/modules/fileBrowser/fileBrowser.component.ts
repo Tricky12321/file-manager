@@ -150,4 +150,16 @@ export class FileBrowserComponent implements OnInit {
       this.simpleTableComponent.update();
     }
   }
+
+  toggleSelectedFiles() {
+    var files = this.getFiles();
+    var anySelected = files.find(x => x.selected == true);
+    if (anySelected != null) {
+      // Deselect all
+      files.forEach(x => x.selected = false);
+    } else {
+      // Select all
+      files.forEach(x => x.selected = true);
+    }
+  }
 }
