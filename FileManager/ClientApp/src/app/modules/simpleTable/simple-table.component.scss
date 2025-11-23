@@ -6,3 +6,25 @@
 p {
   margin-bottom: 0;
 }
+
+$primary: #0b4d91;
+.page-button {
+  border: none;
+  background: none;
+  color: #007bff;
+  cursor: pointer;
+  padding: 5px 10px;
+  font-size: 1rem;
+}
+
+.page-button:disabled {
+  color: #6c757d;
+  cursor: not-allowed;
+  border: 1px solid $primary;
+}
+
+.page-button:hover:not(:disabled) {
+  text-decoration: underline;
+  background: $primary !important;
+  color: white !important;
+}

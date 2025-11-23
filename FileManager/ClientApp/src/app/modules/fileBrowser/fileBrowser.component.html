@@ -114,6 +114,7 @@
       <td [attr.data-sort]="fileInfo.partialHash">{{fileInfo.partialHash}}</td>
       <td>
         <button class="btn btn-danger" (click)="deleteFile(fileInfo)">Delete</button>
+        <button class="btn btn-warning" (click)="openFolder(fileInfo)">Open Folder</button>
       </td>
     </tr>
   </ng-template>

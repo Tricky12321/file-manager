@@ -10,6 +10,7 @@ const routes: Routes = [
   {path: 'qbfiles', component: QbitfilesComponent},
   {path: 'tv', component: FileBrowserComponent},
   {path: 'film', component: FileBrowserComponent},
+  {path: 'browse', component: FileBrowserComponent},
 ];
 
 @NgModule({

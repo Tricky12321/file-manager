@@ -8,6 +8,7 @@ import {ToastrService} from "ngx-toastr";
 import {SimpleTableComponent, TableRequest} from "../simpleTable/simple-table.component";
 import {Observable} from "rxjs";
 import {HttpClient} from "@angular/common/http";
+import {ActivatedRoute, Router} from "@angular/router";
 
 
 @Component({
@@ -33,7 +34,8 @@ export class FileBrowserComponent implements OnInit {
   public clearCache: boolean | null = null;
   public hashDuplicate: boolean | null = null;
 
-  constructor(public http: HttpClient, public generalService: GeneralService, public fileService: FileService, public dialogSrv: DialogService, public toastrService: ToastrService) {
+
+  constructor(public http: HttpClient, public generalService: GeneralService, public fileService: FileService, public dialogSrv: DialogService, public toastrService: ToastrService, public router: Router) {
 
     this.hardlinkFilter = localStorage.getItem("hardlink") == "null" ? null : (localStorage.getItem("hardlink") == "true");
     this.inQbitFilter = localStorage.getItem("inQbit") == "null" ? null : (localStorage.getItem("inQbit") == "true");
@@ -70,7 +72,12 @@ export class FileBrowserComponent implements OnInit {
   }
 
   ngOnInit() {
-    if (window.location.pathname == "/tv") {
+    // get the path from path query param, and if it is not set continue
+    let params = new URLSearchParams(window.location.search);
+    let pathParam = params.get("path");
+    if (pathParam != null && pathParam != "") {
+      this.filePath = pathParam;
+    } else if (window.location.pathname == "/tv") {
       this.filePath = "/torrent/TV"
     } else if (window.location.pathname == "/film") {
       this.filePath = "/torrent/Film"
@@ -161,5 +168,10 @@ export class FileBrowserComponent implements OnInit {
       // Select all
       files.forEach(x => x.selected = true);
     }
+  }
+
+  openFolder(fileInfo: FileInfo) {
+    var folderPath = fileInfo.folderPath;
+    this.router.navigate(['/browse'], {queryParams: {path: folderPath}})
   }
 }
