@@ -5,7 +5,7 @@ import {
   AfterViewInit,
   ElementRef,
   Renderer2,
-  ViewChild
+  ViewChild, EventEmitter, Output
 } from '@angular/core';
 import {HttpClient} from "@angular/common/http";
 
@@ -35,7 +35,10 @@ export class SimpleTableComponent implements AfterViewInit {
   @Input() template!: TemplateRef<any>;  // row template
   @Input() pageSize: number = 10;
   @Input() loadingText: string = 'Loading...';
+  // Should be the URL to post TableRequest to and get TableResult<any> from
+  // It should update when urlChanged is triggered
   @Input() url: string = "";
+  @Output() urlChange: EventEmitter<string> = new EventEmitter<string>();
   @Input() pageSizeOptions: number[] = [10, 25, 50, 100];
 
   // I need a function that can be called to refresh data from the calling component, e.g. after an action
@@ -151,7 +154,10 @@ export class SimpleTableComponent implements AfterViewInit {
     }
   }
 
-  public update() {
+  public update(url: string | null = null) {
+    if (url != null) {
+      this.url = url;
+    }
     if (this.serverSide) {
       this.fetchServerData();
     }

@@ -33,6 +33,7 @@ export class FileBrowserComponent implements OnInit {
   @ViewChild(SimpleTableComponent) simpleTableComponent: SimpleTableComponent | undefined;
   public clearCache: boolean | null = null;
   public hashDuplicate: boolean | null = null;
+  public currentUrl: string = '';
 
 
   constructor(public http: HttpClient, public generalService: GeneralService, public fileService: FileService, public dialogSrv: DialogService, public toastrService: ToastrService, public router: Router) {
@@ -68,7 +69,8 @@ export class FileBrowserComponent implements OnInit {
         this.clearCache = false;
       }
     }
-    return 'api/file/getFilesPost' + queryParams;
+    this.currentUrl = 'api/file/getFilesPost' + queryParams;
+    return this.currentUrl;
   }
 
   ngOnInit() {
@@ -153,8 +155,9 @@ export class FileBrowserComponent implements OnInit {
 
   load(clearCache: boolean = false) {
     this.clearCache = clearCache;
+    ;
     if (this.simpleTableComponent != null) {
-      this.simpleTableComponent.update();
+      this.simpleTableComponent.update(this.buildUrl());
     }
   }
 
