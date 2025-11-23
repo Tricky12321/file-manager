@@ -30,6 +30,7 @@ export class FileBrowserComponent implements OnInit {
 
   // Variable to link to simple-table component, to call function in the component
   @ViewChild(SimpleTableComponent) simpleTableComponent: SimpleTableComponent | undefined;
+  public clearCache: boolean | null = null;
 
   constructor(public http: HttpClient, public generalService: GeneralService, public fileService: FileService, public dialogSrv: DialogService, public toastrService: ToastrService) {
 
@@ -76,6 +77,12 @@ export class FileBrowserComponent implements OnInit {
     if (folderInQbit !== null) {
       queryParams += "&folderInQbit=" + folderInQbit;
     }
+    if (this.clearCache !== null) {
+      queryParams += "&clearCache=" + this.clearCache;
+      if (this.clearCache) {
+        this.clearCache = false;
+      }
+    }
     return 'api/file/getFilesPost' + queryParams;
   }
 
@@ -117,7 +124,7 @@ export class FileBrowserComponent implements OnInit {
         if (result == true) {
           this.generalService.deleteFile(fileInfo.path).subscribe({
             next: (data) => {
-              this.simpleTableComponent!.update();
+              this.load()
             },
             error: () => {
               this.toastrService.error("Error deleting file");
@@ -128,7 +135,7 @@ export class FileBrowserComponent implements OnInit {
     } else {
       this.generalService.deleteFile(fileInfo.path).subscribe({
         next: (data) => {
-          this.simpleTableComponent!.update();
+          this.load();
         },
         error: () => {
           this.toastrService.error("Error deleting file");
@@ -147,7 +154,7 @@ export class FileBrowserComponent implements OnInit {
       if (result == true) {
         this.generalService.deleteFiles(filesToDelete).subscribe({
           next: (data) => {
-            this.simpleTableComponent!.update();
+            this.load();
           },
           error: () => {
             this.toastrService.error("Error deleting files, please refresh and try again");
@@ -165,10 +172,7 @@ export class FileBrowserComponent implements OnInit {
     localStorage.setItem("inQbit", this.inQbitFilter?.toString() ?? "null");
     localStorage.setItem("folderInQbit", this.folderInQbitFilter?.toString() ?? "null");
     localStorage.setItem("needConfirm", this.needConfirm.toString());
-    if (this.simpleTableComponent != null) {
-      this.simpleTableComponent.update();
-    }
-    //this.load()
+    this.load()
   }
 
   /*
@@ -183,4 +187,10 @@ export class FileBrowserComponent implements OnInit {
 
     }
     */
+  load(clearCache: boolean = false) {
+    this.clearCache = clearCache;
+    if (this.simpleTableComponent != null) {
+      this.simpleTableComponent.update();
+    }
+  }
 }
