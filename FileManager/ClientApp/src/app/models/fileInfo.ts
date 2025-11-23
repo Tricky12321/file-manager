@@ -11,4 +11,5 @@ export interface FileInfo {
   sizeMb: number;
   sizeGb: number;
   selected: boolean;
+  hashDuplicate: boolean;
 }

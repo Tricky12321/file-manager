@@ -2,12 +2,11 @@
 @if (this.loading) {
   <i class="fa fa-spinner fa-spin fa-3x fa-fw"></i>
 }
-
 <div class="row">
   <div class="col-9">
     @if (!this.loading) {
       <div class="row">
-        <div class="col-3">
+        <div class="col-2">
           <div class="form-group">
             <label for="hardlinks">Hardlinks</label>
             <select id="hardlinks" class="form-select" [(ngModel)]="hardlinkFilter" (change)="paramsChanged()">
@@ -17,7 +16,7 @@
             </select>
           </div>
         </div>
-        <div class="col-3">
+        <div class="col-2">
           <div class="form-group">
             <label for="inQbit">In Qbit</label>
             <select id="inQbit" class="form-select" [(ngModel)]="inQbitFilter" (change)="paramsChanged()">
@@ -27,7 +26,7 @@
             </select>
           </div>
         </div>
-        <div class="col-3">
+        <div class="col-2">
           <div class="form-group">
             <label for="inQbitFolder">In Qbit Folder</label>
             <select id="inQbitFolder" class="form-select" [(ngModel)]="folderInQbitFilter" (change)="paramsChanged()">
@@ -37,7 +36,17 @@
             </select>
           </div>
         </div>
-        <div class="col-3">
+        <div class="col-2">
+          <div class="form-group">
+            <label for="hashDuplicate">Hash check</label>
+            <select id="hashDuplicate" class="form-select" [(ngModel)]="hashDuplicate" (change)="paramsChanged()">
+              <option [value]="null">All</option>
+              <option [value]="true">Duplicated</option>
+              <option [value]="false">Not duplicated</option>
+            </select>
+          </div>
+        </div>
+        <div class="col-4">
           <div class="form-group">
             <label for="needConfirm">Need Confirmation before delete</label>
             <input type="checkbox" id="needConfirm" class="form-check-input" [(ngModel)]="this.needConfirm"
@@ -57,57 +66,12 @@
     <button class="btn btn-secondary mt-4" (click)="this.load(true)">Refresh data</button>
   </div>
 </div>
-@if (this.fileList != null && !this.loading && false) {
-  <table datatable [dtOptions]="dtOptions" class="table table-bordered table-striped table-hover modern-table">
-    <thead>
-    <tr>
-      <th></th>
-      <th>Path</th>
-      <th>Size</th>
-      <th>Hardlink</th>
-      <th>In Qbit</th>
-      <th>Folder in Qbit</th>
-      <th></th>
-    </tr>
-    </thead>
-    <tbody>
-      @for (fileInfo of fileList; track fileInfo.path) {
-        <tr>
-          <td>
-            <input type="checkbox" [(ngModel)]="fileInfo.selected"/>
-          </td>
-          <td>{{ fileInfo.path }}</td>
-          <td
-            [attr.data-sort]="fileInfo.size">{{ fileInfo.sizeGb > 1 ? fileInfo.sizeGb + " GB" : fileInfo.sizeMb + " MB" }}
-          </td>
-          <td [attr.data-sort]="fileInfo.isHardlink">
-            <i class="fa" [class.text-success]="!fileInfo.isHardlink" [class.fa-times]="!fileInfo.isHardlink"
-               [class.text-danger]="fileInfo.isHardlink" [class.fa-check]="fileInfo.isHardlink"></i>
-          </td>
-          <td>
-            <i class="fa" [class.text-danger]="!fileInfo.inQbit" [class.fa-times]="!fileInfo.inQbit"
-               [class.text-success]="fileInfo.inQbit" [class.fa-check]="fileInfo.inQbit"></i>
-          </td>
-          <td>
-            <i class="fa" [class.text-danger]="!fileInfo.folderInQbit" [class.fa-times]="!fileInfo.folderInQbit"
-               [class.text-success]="fileInfo.folderInQbit" [class.fa-check]="fileInfo.folderInQbit"></i>
-          </td>
-          <td>
-            <button class="btn btn-danger" (click)="deleteFile(fileInfo)">Delete</button>
-          </td>
-        </tr>
-      }
-    </tbody>
-  </table>
-}
-
-
 @if (this.fileService != null) {
   <simple-table
     [serverSide]="true"
     [url]="this.buildUrl()"
     [template]="rowTemplateServer"
-    [loadingText]="'Henter personer...'"
+    [loadingText]="'Henter filer...'"
   >
     <thead>
     <tr>
@@ -117,6 +81,8 @@
       <th data-column-key="IsHardlink" >Hardlink</th>
       <th data-column-key="InQbit" >In Qbit</th>
       <th data-column-key="FolderInQbit" >Folder in Qbit</th>
+      <th data-column-key="HashDuplicate">Hash Duplicate</th>
+      <th data-column-key="Hash">Hash</th>
       <th></th>
     </tr>
     </thead>
@@ -143,6 +109,11 @@
         <i class="fa" [class.text-danger]="!fileInfo.folderInQbit" [class.fa-times]="!fileInfo.folderInQbit"
            [class.text-success]="fileInfo.folderInQbit" [class.fa-check]="fileInfo.folderInQbit"></i>
       </td>
+      <td [attr.data-sort]="fileInfo.hashDuplicate">
+        <i class="fa" [class.text-success]="!fileInfo.hashDuplicate" [class.fa-times]="!fileInfo.hashDuplicate"
+           [class.text-danger]="fileInfo.hashDuplicate" [class.fa-check]="fileInfo.hashDuplicate"></i>
+      </td>
+      <td [attr.data-sort]="fileInfo.partialHash">{{fileInfo.partialHash}}</td>
       <td>
         <button class="btn btn-danger" (click)="deleteFile(fileInfo)">Delete</button>
       </td>

@@ -31,6 +31,7 @@ export class FileBrowserComponent implements OnInit {
   // Variable to link to simple-table component, to call function in the component
   @ViewChild(SimpleTableComponent) simpleTableComponent: SimpleTableComponent | undefined;
   public clearCache: boolean | null = null;
+  public hashDuplicate: boolean | null = null;
 
   constructor(public http: HttpClient, public generalService: GeneralService, public fileService: FileService, public dialogSrv: DialogService, public toastrService: ToastrService) {
 
@@ -38,35 +39,14 @@ export class FileBrowserComponent implements OnInit {
     this.inQbitFilter = localStorage.getItem("inQbit") == "null" ? null : (localStorage.getItem("inQbit") == "true");
     this.folderInQbitFilter = localStorage.getItem("folderInQbit") == "null" ? null : (localStorage.getItem("folderInQbit") == "true");
     this.needConfirm = localStorage.getItem("needConfirm") == "null" ? true : (localStorage.getItem("folderInQbit") == "true");
-  }
-
-  getTableData(tableRequest: TableRequest) {
-    let hardlink = this.hardlinkFilter?.toString() !== "null" ? this.hardlinkFilter : null;
-    let inQbit = this.inQbitFilter?.toString() !== "null" ? this.inQbitFilter : null;
-    let folderInQbit = this.folderInQbitFilter?.toString() !== "null" ? this.folderInQbitFilter : null;
-    var queryParams = "?path=" + this.filePath;
-    if (hardlink !== null && hardlink !== undefined) {
-      queryParams += "&hardlink=" + hardlink;
-    }
-    if (inQbit !== null) {
-      queryParams += "&inQbit=" + inQbit;
-    }
-    if (folderInQbit !== null) {
-      queryParams += "&folderInQbit=" + folderInQbit;
-    }
-    /*
-    if (clearCache !== null) {
-      queryParams += "&clearCache=" + clearCache;
-    }
-    */
-    return this.http.post<FileInfo[]>('api/file/getFilesPost' + queryParams, tableRequest);
-    //return this.fileService.getFilesPost(this.filePath, tableRequest, this.hardlinkFilter, this.inQbitFilter, this.folderInQbitFilter);
+    this.hashDuplicate = localStorage.getItem("hashDuplicate") == "null" ? true : (localStorage.getItem("hashDuplicate") == "true");
   }
 
   buildUrl() {
     let hardlink = this.hardlinkFilter?.toString() !== "null" ? this.hardlinkFilter : null;
     let inQbit = this.inQbitFilter?.toString() !== "null" ? this.inQbitFilter : null;
     let folderInQbit = this.folderInQbitFilter?.toString() !== "null" ? this.folderInQbitFilter : null;
+    let hashDuplicate = this.hashDuplicate?.toString() !== "null" ? this.hashDuplicate : null;
     var queryParams = "?path=" + this.filePath;
     if (hardlink !== null && hardlink !== undefined) {
       queryParams += "&hardlink=" + hardlink;
@@ -76,6 +56,9 @@ export class FileBrowserComponent implements OnInit {
     }
     if (folderInQbit !== null) {
       queryParams += "&folderInQbit=" + folderInQbit;
+    }
+    if (hashDuplicate !== null) {
+      queryParams += "&hashDuplicate=" + hashDuplicate;
     }
     if (this.clearCache !== null) {
       queryParams += "&clearCache=" + this.clearCache;
@@ -92,34 +75,11 @@ export class FileBrowserComponent implements OnInit {
     } else if (window.location.pathname == "/film") {
       this.filePath = "/torrent/Film"
     }
-    //this.load();
+    this.load();
   }
 
-  /*
-    load(clearCache: boolean = false) {
-      if (!this.loading) {
-        this.fileList = null;
-        this.loading = true;
-        this.fileService.getFiles(this.filePath, this.hardlinkFilter, this.inQbitFilter, this.folderInQbitFilter, clearCache).subscribe({
-          next: (data) => {
-            this.fileList = data;
-            this.fileList.map((file: FileInfo) => {
-              file.selected = false;
-            })
-            this.loading = false;
-          },
-          error: () => {
-            this.toastrService.error("Error loading files");
-            this.loading = false;
-          }
-        });
-      }
-    }
-  */
-
-
   deleteFile(fileInfo: FileInfo) {
-    if (this.needConfirm == false) {
+    if (!this.needConfirm) {
       this.dialogSrv.openConfirmDialog("File to delete: " + fileInfo.path, "Are you sure you want to delete this file?").afterClosed().subscribe((result) => {
         if (result == true) {
           this.generalService.deleteFile(fileInfo.path).subscribe({
@@ -172,21 +132,10 @@ export class FileBrowserComponent implements OnInit {
     localStorage.setItem("inQbit", this.inQbitFilter?.toString() ?? "null");
     localStorage.setItem("folderInQbit", this.folderInQbitFilter?.toString() ?? "null");
     localStorage.setItem("needConfirm", this.needConfirm.toString());
+    localStorage.setItem("hashDuplicate", this.hashDuplicate?.toString() ?? "null");
     this.load()
   }
 
-  /*
-    toggleSelectedFiles() {
-      // if any selected, select none, else select all
-      const anySelected = this.fileList!.some(file => file.selected);
-      if (anySelected) {
-        this.fileList!.forEach(file => file.selected = false);
-      } else {
-        this.fileList!.forEach(file => file.selected = true);
-      }
-
-    }
-    */
   load(clearCache: boolean = false) {
     this.clearCache = clearCache;
     if (this.simpleTableComponent != null) {

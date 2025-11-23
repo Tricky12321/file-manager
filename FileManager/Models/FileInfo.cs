@@ -19,5 +19,7 @@ public class FileInfo
 
     public bool InQbit { get; set; }
     public bool FolderInQbit { get; set; }
+    public bool HashDuplicate { get; set; }
+
     public bool Selected = false;
 }

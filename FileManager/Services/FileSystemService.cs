@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using FileManager.Models;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Newtonsoft.Json;
 using FileInfo = FileManager.Models.FileInfo;
 
@@ -20,7 +21,7 @@ public class FileSystemService
     {
         _qbittorrentService = qBittorrentService;
     }
-    
+
     [DllImport("libc", SetLastError = true)]
     private static extern int stat(string path, out Stat buf);
 
@@ -56,10 +57,12 @@ public class FileSystemService
             var files = GetFilesInDirectory(dir);
             output.AddRange(files);
         }
+
         return output;
     }
 
-    public List<FileInfo> GetFilesInDirectory(string directoryPath, bool? hardlink = null, bool? inQbit = null, bool? folderInQbit = null, bool clearCache = false)
+    public List<FileInfo> GetFilesInDirectory(string directoryPath, bool? hardlink = null, bool? inQbit = null,
+        bool? folderInQbit = null, bool? hashDuplicate = null, bool clearCache = false)
     {
         var qbitFiles = _qbittorrentService.GetTorrentList(clearCache).GetAwaiter().GetResult();
         var qbitAllFiles = _qbittorrentService.GetTorrentFiles(qbitFiles, clearCache).GetAwaiter().GetResult();
@@ -67,7 +70,7 @@ public class FileSystemService
         int scanned = 0;
         // sha1 hash the directory path for cache
         var directoryHashed = Convert.ToHexString(SHA1.HashData(System.Text.Encoding.UTF8.GetBytes(directoryPath)));
-        var cachePath = "/qbit_data/"+ directoryHashed + "_file_cache.json";
+        var cachePath = "/qbit_data/" + directoryHashed + "_file_cache.json";
         if (clearCache)
         {
             if (File.Exists(cachePath))
@@ -75,10 +78,10 @@ public class FileSystemService
                 File.Delete(cachePath);
             }
         }
-        
+
         if (File.Exists(cachePath))
         {
-            return FilterResults(hardlink, inQbit, folderInQbit,
+            return FilterResults(hardlink, inQbit, folderInQbit, hashDuplicate,
                 JsonConvert.DeserializeObject<List<FileInfo>>(File.ReadAllText(cachePath)));
         }
 
@@ -94,6 +97,7 @@ public class FileSystemService
                     {
                         inodeMap[key] = new List<(string, long)>();
                     }
+
                     // Get the disk size of the file
                     var diskSize = file.GetFileSize();
                     inodeMap[key].Add((file, diskSize));
@@ -114,7 +118,7 @@ public class FileSystemService
         foreach (var kv in inodeMap)
         {
             inodeList.Add((kv.Key.dev, kv.Key.ino, kv.Value));
-         }
+        }
 
         int totalInodes = inodeList.Count;
         int processedInodes = 0;
@@ -156,27 +160,40 @@ public class FileSystemService
                     Size = size,
                     PartialHash = hash,
                     InQbit = qbitAllFiles.Any(qb => qb == path),
-                    FolderInQbit = qbitAllFiles.Any(qb => qb.StartsWith(System.IO.Path.GetDirectoryName(path) ?? ""))
+                    FolderInQbit = qbitAllFiles.Any(qb => qb.StartsWith(System.IO.Path.GetDirectoryName(path) ?? "")),
                 });
             }
         }
+        
+        
+
         Console.WriteLine("Caching file scan results to " + cachePath);
         Console.WriteLine("Total results: " + result.Count);
         Console.WriteLine("Total scanned files: " + scanned);
         Console.WriteLine("Total In Qbittorrent: " + result.Count(f => f.InQbit));
         Console.WriteLine("Total Folder In Qbittorrent: " + result.Count(f => f.FolderInQbit));
         File.WriteAllText(cachePath, JsonConvert.SerializeObject(result));
-        result = FilterResults(hardlink, inQbit, folderInQbit, result);
-        
+        result = FilterResults(hardlink, inQbit, folderInQbit, hashDuplicate, result);
+
         return result;
     }
-    
 
-    private static List<FileInfo> FilterResults(bool? hardlink, bool? inQbit, bool? folderInQbit, List<FileInfo> result)
+
+    private static List<FileInfo> FilterResults(bool? hardlink, bool? inQbit, bool? folderInQbit, bool? hashDuplicate,
+        List<FileInfo> result)
     {
+        result = result.Select(fi =>
+        {
+            fi.HashDuplicate = result.Count(f => f.PartialHash == fi.PartialHash) > 1;
+            return fi;
+        }).ToList();
         return result.Where(file => (hardlink == null || file.IsHardlink == hardlink)
                                     && (inQbit == null || file.InQbit == inQbit)
-                                    && (folderInQbit == null || file.FolderInQbit == folderInQbit)).ToList();
+                                    && (folderInQbit == null || file.FolderInQbit == folderInQbit)
+                                    && (hashDuplicate == null || (hashDuplicate == true)
+                                        ? file.HashDuplicate
+                                        : file.HashDuplicate == false)
+                                    ).ToList();
     }
 
     static string ComputePartialHash(string filePath, int bytesToRead)
@@ -202,13 +219,13 @@ public class FileSystemService
         {
             throw new ArgumentException("Path cannot be null or empty.", nameof(path));
         }
-        
+
         // Check if the path is less than 10 characters to avoid accidental deletions
         if (path.Length < 10)
         {
             throw new ArgumentException("Path is too short, deletion aborted for safety.", nameof(path));
         }
-        
+
         if (File.Exists(path))
         {
             File.Delete(path);
@@ -218,9 +235,11 @@ public class FileSystemService
             {
                 qbitAllFiles.Remove(qbitFile);
             }
+
             _qbittorrentService.UpdateAllFilesCache(qbitAllFiles);
             return;
         }
+
         throw new FileNotFoundException($"File {path} not found.");
     }
 
@@ -238,5 +257,4 @@ public class FileSystemService
             Console.WriteLine(e);
         }
     }
-
 }

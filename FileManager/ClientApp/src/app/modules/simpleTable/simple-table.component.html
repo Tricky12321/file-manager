@@ -40,11 +40,20 @@
             <p>Showing {{ this.startIndex }} - {{ this.endIndex }} of {{ this.totalItemCount }} items</p>
         </div>
         <div class="col-9 text-end">
+            <button class="btn btn-secondary me-2" (click)="goToPage(1)" [disabled]="currentPage === 1">
+                First
+            </button>
             <button class="btn btn-secondary me-2" (click)="goToPreviousPage()" [disabled]="currentPage === 1">
                 Previous
             </button>
-            <button class="btn btn-secondary" (click)="goToNextPage()" [disabled]="currentPage === totalPages">
+            <button class="btn btn-secondary me-2" *ngFor="let page of getPageNumbers()" (click)="goToPage(page)" [disabled]="currentPage === page">
+                {{ page }}
+            </button>
+            <button class="btn btn-secondary me-2" (click)="goToNextPage()" [disabled]="this.currentPage === this.totalPages">
                 Next
+            </button>
+            <button class="btn btn-secondary me-2" (click)="goToPage(this.totalPages)" [disabled]="this.currentPage == this.totalPages">
+                Last
             </button>
         </div>
     </div>

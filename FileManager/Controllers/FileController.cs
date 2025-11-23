@@ -15,28 +15,32 @@ public class FileController : ControllerBase
     {
         _fileSystemService = fileSystemService;
     }
-    
+
     [HttpGet("getFiles")]
-    public IActionResult GetFiles([FromQuery] string path, [FromQuery] bool? hardlink = null, [FromQuery] bool? inQbit= null, [FromQuery] bool? folderInQbit= null, [FromQuery] bool? clearCache= null)
+    public IActionResult GetFiles([FromQuery] string path, [FromQuery] bool? hardlink = null,
+        [FromQuery] bool? inQbit = null, [FromQuery] bool? folderInQbit = null, [FromQuery] bool? hashDuplicate = null,
+        [FromQuery] bool? clearCache = null)
     {
-        return Ok(_fileSystemService.GetFilesInDirectory(path, hardlink, inQbit, folderInQbit, clearCache == true));
+        return Ok(_fileSystemService.GetFilesInDirectory(path, hardlink, inQbit, folderInQbit,hashDuplicate, clearCache == true));
     }
-    
+
     [HttpPost("getFilesPost")]
-    public IActionResult GetFilesPost([FromBody] TableRequestDto tableRequest, [FromQuery] string path, [FromQuery] bool? hardlink = null, [FromQuery] bool? inQbit= null, [FromQuery] bool? folderInQbit= null, [FromQuery] bool? clearCache= null)
+    public IActionResult GetFilesPost([FromBody] TableRequestDto tableRequest, [FromQuery] string path,
+        [FromQuery] bool? hardlink = null, [FromQuery] bool? inQbit = null, [FromQuery] bool? folderInQbit = null,
+        [FromQuery] bool? hashDuplicate = null, [FromQuery] bool? clearCache = null)
     {
-        var results = _fileSystemService.GetFilesInDirectory(path, hardlink, inQbit, folderInQbit, clearCache == true)
+        var results = _fileSystemService.GetFilesInDirectory(path, hardlink, inQbit, folderInQbit,hashDuplicate, clearCache == true)
             .ToTableResponse(tableRequest);
         return Ok(results);
     }
-    
+
     [HttpPost("delete")]
     public IActionResult DeleteFile([FromBody] DeleteFileDto deleteFileDto)
     {
         _fileSystemService.DeleteFile(deleteFileDto.Path);
         return Ok();
     }
-    
+
     [HttpPost("deleteMultiple")]
     public IActionResult DeleteFile([FromBody] List<string> deleteMultiple)
     {

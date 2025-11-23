@@ -298,4 +298,17 @@ export class SimpleTableComponent implements AfterViewInit {
     this.currentPage = this.currentPage + 1;
     this.fetchServerData();
   }
+
+  goToPage(page: number) {
+    this.currentPage = page;
+    this.fetchServerData();
+  }
+
+  getPageNumbers() {
+    // Return an array of page numbers for pagination, starting from currentPage +1 to currentPage +5
+    const pages: number[] = [];
+    const startPage = Math.max(1, this.currentPage - 2);
+    const endPage = Math.min(this.totalPages, this.currentPage + 2);
+    return Array.from({length: endPage - startPage + 1}, (_, i) => startPage + i);
+  }
 }
