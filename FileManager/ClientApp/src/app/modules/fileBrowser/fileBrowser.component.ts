@@ -104,8 +104,16 @@ export class FileBrowserComponent implements OnInit {
     }
   }
 
+  getFiles() {
+    var data = this.simpleTableComponent?.data;
+    if (data != null) {
+      return data as FileInfo[];
+    } else {
+      return [];
+    }
+  }
   deleteSelectedFiles() {
-    const filesToDelete = this.fileList!.filter(file => file.selected).map(x => x.path);
+    const filesToDelete = this.getFiles()!.map(x => x.path);
     if (filesToDelete.length == 0) {
       this.toastrService.info("No files selected");
       return;
