@@ -155,10 +155,10 @@ export class FileBrowserComponent implements OnInit {
 
   load(clearCache: boolean = false) {
     this.clearCache = clearCache;
-    ;
     if (this.simpleTableComponent != null) {
       this.simpleTableComponent.update(this.buildUrl());
     }
+    this.clearCache = false;
   }
 
   toggleSelectedFiles() {
