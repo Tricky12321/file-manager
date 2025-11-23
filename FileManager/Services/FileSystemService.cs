@@ -225,19 +225,26 @@ public class FileSystemService
         {
             throw new ArgumentException("Path is too short, deletion aborted for safety.", nameof(path));
         }
-
+        Console.WriteLine($"Deleting file {path}");
         if (File.Exists(path))
         {
+            Console.WriteLine($"Deleting file {path}");
             File.Delete(path);
+            Console.WriteLine($"Deleted file {path}");
             var qbitAllFiles = _qbittorrentService.GetTorrentFiles(null).GetAwaiter().GetResult();
             var qbitFile = qbitAllFiles.FirstOrDefault(f => f == path);
             if (qbitFile != null)
             {
                 qbitAllFiles.Remove(qbitFile);
             }
-
+            // Update qBittorrent cache
+            Console.WriteLine($"Updating qBittorrent cache after deleting file {path}");
             _qbittorrentService.UpdateAllFilesCache(qbitAllFiles);
             return;
+        }
+        else
+        {
+            Console.WriteLine("File not found: " + path);
         }
 
         throw new FileNotFoundException($"File {path} not found.");
