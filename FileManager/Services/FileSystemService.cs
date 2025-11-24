@@ -219,9 +219,6 @@ public class FileSystemService
             // Remove from cache
             data = data.Where(f => f.Path != path).ToList();
             File.WriteAllText(cachePath, JsonConvert.SerializeObject(data));
-            
-            
-            
             var qbitAllFiles = _qbittorrentService.GetTorrentFiles(null).GetAwaiter().GetResult();
             var qbitFile = qbitAllFiles.FirstOrDefault(f => f == path);
             if (qbitFile != null)

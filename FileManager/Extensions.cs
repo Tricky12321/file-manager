@@ -106,6 +106,10 @@ public static class Extensions
 
     public static string Sha1Hash(this string input)
     {
+        if (input == null)
+        {
+            return null;
+        }
         return Convert.ToHexString(SHA1.HashData(System.Text.Encoding.UTF8.GetBytes(input)));
     }
     
