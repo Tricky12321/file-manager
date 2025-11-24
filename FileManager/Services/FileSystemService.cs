@@ -128,7 +128,7 @@ public class FileSystemService
             inodeEntry =>
             {
                 var firstFile = inodeEntry.files[0];
-                string hash = ComputePartialHash(firstFile.path, 1024 * 1024); // 1 MB
+                string hash = ComputePartialHash(firstFile.path, 1024 * 1024*32); // 32 MB
                 var key = (inodeEntry.dev, inodeEntry.ino);
                 inodeHashes[key] = hash;
 
