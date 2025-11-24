@@ -81,8 +81,7 @@ public class FileSystemService
 
         if (File.Exists(cachePath))
         {
-            return FilterResults(hardlink, inQbit, folderInQbit, hashDuplicate,
-                JsonConvert.DeserializeObject<List<FileInfo>>(File.ReadAllText(cachePath)));
+            return  JsonConvert.DeserializeObject<List<FileInfo>>(File.ReadAllText(cachePath)).FilterResults(hardlink, inQbit, folderInQbit, hashDuplicate);
         }
 
         // Step 1: Scan all files and collect size + inode
@@ -173,27 +172,8 @@ public class FileSystemService
         Console.WriteLine("Total In Qbittorrent: " + result.Count(f => f.InQbit));
         Console.WriteLine("Total Folder In Qbittorrent: " + result.Count(f => f.FolderInQbit));
         File.WriteAllText(cachePath, JsonConvert.SerializeObject(result));
-        result = FilterResults(hardlink, inQbit, folderInQbit, hashDuplicate, result);
-
+        result =  result.FilterResults(hardlink, inQbit, folderInQbit, hashDuplicate);
         return result;
-    }
-
-
-    private static List<FileInfo> FilterResults(bool? hardlink, bool? inQbit, bool? folderInQbit, bool? hashDuplicate,
-        List<FileInfo> result)
-    {
-        result = result.Select(fi =>
-        {
-            fi.HashDuplicate = result.Count(f => f.PartialHash == fi.PartialHash) > 1;
-            return fi;
-        }).ToList();
-        return result.Where(file => (hardlink == null || file.IsHardlink == hardlink)
-                                    && (inQbit == null || file.InQbit == inQbit)
-                                    && (folderInQbit == null || file.FolderInQbit == folderInQbit)
-                                    && (hashDuplicate == null || (hashDuplicate == true
-                                        ? file.HashDuplicate
-                                        : file.HashDuplicate == false))
-                                    ).ToList();
     }
 
     static string ComputePartialHash(string filePath, int bytesToRead)

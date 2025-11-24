@@ -108,4 +108,22 @@ public static class Extensions
     {
         return Convert.ToHexString(SHA1.HashData(System.Text.Encoding.UTF8.GetBytes(input)));
     }
+    
+    public static List<Models.FileInfo> FilterResults(this List<Models.FileInfo> result, bool? hardlink, bool? inQbit, bool? folderInQbit, bool? hashDuplicate)
+    {
+        var patialHashDictionary = result.GroupBy(x => x.PartialHash).ToDictionary(x => x.Key, x => x.Count());
+        result = result.Select(fi =>
+        {
+            fi.HashDuplicate = patialHashDictionary[fi.PartialHash] > 1;
+            return fi;
+        }).ToList();
+        return result.Where(file => (hardlink == null || file.IsHardlink == hardlink)
+                                    && (inQbit == null || file.InQbit == inQbit)
+                                    && (folderInQbit == null || file.FolderInQbit == folderInQbit)
+                                    && (hashDuplicate == null || (hashDuplicate == true
+                                        ? file.HashDuplicate
+                                        : file.HashDuplicate == false))
+        ).ToList();
+    }
+
 }
