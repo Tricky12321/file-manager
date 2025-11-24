@@ -17,20 +17,20 @@ export class GeneralService {
     return this.http.get<TorrentInfo[]>('api/qbit/true');
   }
 
-  deleteFile(path: string, filePath: string| null = null) {
-    if (filePath === null) {
+  deleteFile(path: string, folderPath: string| null = null) {
+    if (folderPath === null) {
       return this.http.post('api/file/delete',{path:path});
 
     }
-    return this.http.post('api/file/delete?filePath='+filePath,{path:path});
+    return this.http.post('api/file/delete?folderPath='+folderPath,{path:path});
   }
 
-  deleteFiles(filesToDelete: string[], filePath: string| null = null) {
-    if (filePath === null) {
+  deleteFiles(filesToDelete: string[], folderPath: string| null = null) {
+    if (folderPath === null) {
       return this.http.post('api/file/deleteMultiple',filesToDelete);
 
     }
-    return this.http.post('api/file/deleteMultiple?filePath='+filePath,filesToDelete);
+    return this.http.post('api/file/deleteMultiple?folderPath='+folderPath,filesToDelete);
   }
 
   getTorrentFiles(clearCache: boolean = false) {
