@@ -138,6 +138,7 @@ public class FileSystemService
                     if (processedInodes % 10 == 0 || processedInodes == totalInodes)
                     {
                         double pct = processedInodes * 100.0 / totalInodes;
+                        Console.WriteLine($"Computed hashes for {processedInodes}/{totalInodes} inodes ({pct:F2}%)");
                     }
                 }
             });
@@ -180,11 +181,11 @@ public class FileSystemService
     {
         try
         {
-            using var md5 = MD5.Create();
+            using var sha1 = SHA1.Create();
             using var stream = File.OpenRead(filePath);
             byte[] buffer = new byte[bytesToRead];
             int read = stream.Read(buffer, 0, bytesToRead);
-            byte[] hash = md5.ComputeHash(buffer, 0, read);
+            byte[] hash = sha1.ComputeHash(buffer, 0, read);
             return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
         }
         catch
