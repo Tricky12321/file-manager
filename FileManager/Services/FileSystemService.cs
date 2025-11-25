@@ -18,6 +18,12 @@ namespace FileManager.Services;
 public class FileSystemService
 {
     private readonly QBittorrentService _qbittorrentService;
+    private static object _lockObj = new object();
+    private string[] ScanFolders = new string[]
+    {
+        "/torrent/TV",
+        "/torrent/Film",
+    };
 
     public FileSystemService(QBittorrentService qBittorrentService)
     {
@@ -62,8 +68,9 @@ public class FileSystemService
 
         return output;
     }
-    
-    public List<DirectoryInfo> GetDirectoriesInDirectory(string directoryPath,bool? folderInQbit = null, bool clearCache = false)
+
+    public List<DirectoryInfo> GetDirectoriesInDirectory(string directoryPath, bool? folderInQbit = null,
+        bool clearCache = false)
     {
         List<FileInfo> files = GetFilesInDirectory(directoryPath, null, null, folderInQbit, null, clearCache);
         var grouped = files.GroupBy(f => f.FolderPath);
@@ -78,6 +85,7 @@ public class FileSystemService
                 Size = group.Sum(f => f.Size)
             });
         }
+
         return folders;
     }
 
@@ -88,21 +96,46 @@ public class FileSystemService
         var qbitAllFiles = _qbittorrentService.GetTorrentFiles(qbitFiles, clearCache).GetAwaiter().GetResult();
         var inodeMap = new Dictionary<(ulong dev, ulong ino), List<(string path, long size)>>();
         int scanned = 0;
-        // sha1 hash the directory path for cache
-        var cachePath = "/qbit_data/file_cache.json";
-        if (clearCache)
+
+        lock (_lockObj)
         {
+            // sha1 hash the directory path for cache
+            var cachePath = "/qbit_data/file_cache.json";
+            if (clearCache)
+            {
+                if (File.Exists(cachePath))
+                {
+                    File.Delete(cachePath);
+                }
+            }
+
             if (File.Exists(cachePath))
             {
-                File.Delete(cachePath);
+                return JsonConvert.DeserializeObject<List<FileInfo>>(File.ReadAllText(cachePath))
+                    .FilterResults(directoryPath, hardlink, inQbit, folderInQbit, hashDuplicate);
             }
-        }
 
-        if (File.Exists(cachePath))
-        {
-            return  JsonConvert.DeserializeObject<List<FileInfo>>(File.ReadAllText(cachePath)).FilterResults(directoryPath, hardlink, inQbit, folderInQbit, hashDuplicate);
-        }
+            List<FileInfo> result = new List<FileInfo>();
+            foreach (var folder in ScanFolders)
+            {
+                result.AddRange(ScanFilesInPath(folder, inodeMap, qbitAllFiles, ref scanned));
+            }
 
+
+
+            Console.WriteLine("Caching file scan results to " + cachePath);
+            Console.WriteLine("Total results: " + result.Count);
+            Console.WriteLine("Total scanned files: " + scanned);
+            Console.WriteLine("Total In Qbittorrent: " + result.Count(f => f.InQbit));
+            Console.WriteLine("Total Folder In Qbittorrent: " + result.Count(f => f.FolderInQbit));
+            File.WriteAllText(cachePath, JsonConvert.SerializeObject(result));
+            result = result.FilterResults(directoryPath, hardlink, inQbit, folderInQbit, hashDuplicate);
+            return result;
+        }
+    }
+
+    private static List<FileInfo> ScanFilesInPath(string directoryPath, Dictionary<(ulong dev, ulong ino), List<(string path, long size)>> inodeMap, List<string> qbitAllFiles, ref int scanned)
+    {
         // Step 1: Scan all files and collect size + inode
         foreach (var file in Directory.EnumerateFiles(directoryPath, "*", SearchOption.AllDirectories))
         {
@@ -140,25 +173,25 @@ public class FileSystemService
 
         int totalInodes = inodeList.Count;
         int processedInodes = 0;
-        object lockObj = new object();
+        var lockObj = new object();
 
         Parallel.ForEach(inodeList, inodeEntry =>
-            {
-                var firstFile = inodeEntry.files[0];
-                string hash = ComputePartialHash(firstFile.path, 1024 * 1024*8); // 8 MB
-                var key = (inodeEntry.dev, inodeEntry.ino);
-                inodeHashes[key] = hash;
+        {
+            var firstFile = inodeEntry.files[0];
+            string hash = ComputePartialHash(firstFile.path, 1024 * 1024 * 8); // 8 MB
+            var key = (inodeEntry.dev, inodeEntry.ino);
+            inodeHashes[key] = hash;
 
-                lock (lockObj)
+            lock (lockObj)
+            {
+                processedInodes++;
+                if (processedInodes % 50 == 0 || processedInodes == totalInodes)
                 {
-                    processedInodes++;
-                    if (processedInodes % 50 == 0 || processedInodes == totalInodes)
-                    {
-                        double pct = processedInodes * 100.0 / totalInodes;
-                        Console.WriteLine($"Computed hashes for {processedInodes}/{totalInodes} inodes ({pct:F2}%)");
-                    }
+                    double pct = processedInodes * 100.0 / totalInodes;
+                    Console.WriteLine($"Computed hashes for {processedInodes}/{totalInodes} inodes ({pct:F2}%)");
                 }
-            });
+            }
+        });
         // Step 3: Flatten to FileInfo
         var result = new List<FileInfo>();
         foreach (var kv in inodeMap)
@@ -177,20 +210,12 @@ public class FileSystemService
                     Size = size,
                     PartialHash = hash,
                     InQbit = qbitAllFiles.Any(qb => qb == path),
-                    FolderInQbit = qbitAllFiles.Any(qb => qb.StartsWith(System.IO.Path.GetDirectoryName(path) ?? "")),
+                    FolderInQbit =
+                        qbitAllFiles.Any(qb => qb.StartsWith(System.IO.Path.GetDirectoryName(path) ?? "")),
                 });
             }
         }
-        
-        
 
-        Console.WriteLine("Caching file scan results to " + cachePath);
-        Console.WriteLine("Total results: " + result.Count);
-        Console.WriteLine("Total scanned files: " + scanned);
-        Console.WriteLine("Total In Qbittorrent: " + result.Count(f => f.InQbit));
-        Console.WriteLine("Total Folder In Qbittorrent: " + result.Count(f => f.FolderInQbit));
-        File.WriteAllText(cachePath, JsonConvert.SerializeObject(result));
-        result =  result.FilterResults(directoryPath, hardlink, inQbit, folderInQbit, hashDuplicate);
         return result;
     }
 
@@ -213,8 +238,6 @@ public class FileSystemService
 
     public void DeleteFile(string path, string directoryPath)
     {
-        
-        
         if (path.IsNullOrWhitespace())
         {
             throw new ArgumentException("Path cannot be null or empty.", nameof(path));
@@ -225,6 +248,7 @@ public class FileSystemService
         {
             throw new ArgumentException("Path is too short, deletion aborted for safety.", nameof(path));
         }
+
         Console.WriteLine($"Deleting file {path}");
         if (File.Exists(path))
         {
@@ -257,6 +281,7 @@ public class FileSystemService
         {
             qbitAllFiles.Remove(qbitFile);
         }
+
         // Update qBittorrent cache
         Console.WriteLine($"Updating qBittorrent cache after deleting file {path}");
         _qbittorrentService.UpdateAllFilesCache(qbitAllFiles);
