@@ -33,6 +33,20 @@ public class FileController : ControllerBase
             .ToTableResponse(tableRequest);
         return Ok(results);
     }
+    
+    [HttpGet("getFolders")]
+    public IActionResult GetFolder([FromQuery] string path,[FromQuery] bool? folderInQbit = null, [FromQuery] bool? clearCache = null)
+    {
+        return Ok(_fileSystemService.GetDirectoriesInDirectory(path, folderInQbit, clearCache == true));
+    }
+
+    [HttpPost("getFoldersPost")]
+    public IActionResult GetFoldersPost([FromBody] TableRequestDto tableRequest, [FromQuery] string path,[FromQuery] bool? folderInQbit = null, [FromQuery] bool? clearCache = null)
+    {
+        var results = _fileSystemService.GetDirectoriesInDirectory(path, folderInQbit, clearCache == true)
+            .ToTableResponse(tableRequest);
+        return Ok(results);
+    }
 
     [HttpPost("delete")]
     public IActionResult DeleteFile([FromBody] DeleteFileDto deleteFileDto, [FromQuery] string folderPath)

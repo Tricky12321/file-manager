@@ -8,8 +8,10 @@ import {QbitfilesComponent} from "./modules/qbitfiles/qbitfiles.component";
 const routes: Routes = [
   {path: 'qb', component: QbitdashboardComponent},
   {path: 'qbfiles', component: QbitfilesComponent},
-  {path: 'tv', component: FileBrowserComponent},
-  {path: 'film', component: FileBrowserComponent},
+  {path: 'files/tv', component: FileBrowserComponent},
+  {path: 'files/film', component: FileBrowserComponent},
+  {path: 'directories/tv', component: FileBrowserComponent},
+  {path: 'directories/film', component: FileBrowserComponent},
   {path: 'browse', component: FileBrowserComponent},
 ];
 

@@ -22,7 +22,7 @@ export class FileBrowserComponent implements OnInit {
     paging: false,
   }
   public loading: boolean = false;
-  public filePath!: string;
+  public filePath: string = '';
   public fileList: FileInfo[] | null = null;
   public hardlinkFilter: boolean | null = null;
   public inQbitFilter: boolean | null = null;
@@ -33,7 +33,9 @@ export class FileBrowserComponent implements OnInit {
   @ViewChild(SimpleTableComponent) simpleTableComponent: SimpleTableComponent | undefined;
   public clearCache: boolean | null = null;
   public hashDuplicate: boolean | null = null;
-  public currentUrl: string = '';
+  public currentUrl!: string;
+  public folderPath: string = '';
+  public folderMode: boolean = false;
 
 
   constructor(public http: HttpClient, public generalService: GeneralService, public fileService: FileService, public dialogSrv: DialogService, public toastrService: ToastrService, public router: Router) {
@@ -45,32 +47,49 @@ export class FileBrowserComponent implements OnInit {
     this.hashDuplicate = localStorage.getItem("hashDuplicate") == "null" ? true : (localStorage.getItem("hashDuplicate") == "true");
   }
 
-  buildUrl() {
-    let hardlink = this.hardlinkFilter?.toString() !== "null" ? this.hardlinkFilter : null;
-    let inQbit = this.inQbitFilter?.toString() !== "null" ? this.inQbitFilter : null;
-    let folderInQbit = this.folderInQbitFilter?.toString() !== "null" ? this.folderInQbitFilter : null;
-    let hashDuplicate = this.hashDuplicate?.toString() !== "null" ? this.hashDuplicate : null;
-    var queryParams = "?path=" + this.filePath;
-    if (hardlink !== null && hardlink !== undefined) {
-      queryParams += "&hardlink=" + hardlink;
-    }
-    if (inQbit !== null) {
-      queryParams += "&inQbit=" + inQbit;
-    }
-    if (folderInQbit !== null) {
-      queryParams += "&folderInQbit=" + folderInQbit;
-    }
-    if (hashDuplicate !== null) {
-      queryParams += "&hashDuplicate=" + hashDuplicate;
-    }
-    if (this.clearCache !== null) {
-      queryParams += "&clearCache=" + this.clearCache;
-      if (this.clearCache) {
-        this.clearCache = false;
+  buildUrl() : string {
+    if (this.filePath != "") {
+      let hardlink = this.hardlinkFilter?.toString() !== "null" ? this.hardlinkFilter : null;
+      let inQbit = this.inQbitFilter?.toString() !== "null" ? this.inQbitFilter : null;
+      let folderInQbit = this.folderInQbitFilter?.toString() !== "null" ? this.folderInQbitFilter : null;
+      let hashDuplicate = this.hashDuplicate?.toString() !== "null" ? this.hashDuplicate : null;
+      var queryParams = "?path=" + this.filePath;
+      if (hardlink !== null && hardlink !== undefined) {
+        queryParams += "&hardlink=" + hardlink;
       }
+      if (inQbit !== null) {
+        queryParams += "&inQbit=" + inQbit;
+      }
+      if (folderInQbit !== null) {
+        queryParams += "&folderInQbit=" + folderInQbit;
+      }
+      if (hashDuplicate !== null) {
+        queryParams += "&hashDuplicate=" + hashDuplicate;
+      }
+      if (this.clearCache !== null) {
+        queryParams += "&clearCache=" + this.clearCache;
+        if (this.clearCache) {
+          this.clearCache = false;
+        }
+      }
+      this.currentUrl = 'api/file/getFilesPost' + queryParams;
+      return this.currentUrl;
+    } else if (this.folderPath != "") {
+      let folderInQbit = this.folderInQbitFilter?.toString() !== "null" ? this.folderInQbitFilter : null;
+      var queryParams = "?path=" + this.folderPath;
+      if (folderInQbit !== null) {
+        queryParams += "&folderInQbit=" + folderInQbit;
+      }
+      if (this.clearCache !== null) {
+        queryParams += "&clearCache=" + this.clearCache;
+        if (this.clearCache) {
+          this.clearCache = false;
+        }
+      }
+      this.currentUrl = 'api/file/getFoldersPost' + queryParams;
+      return this.currentUrl;
     }
-    this.currentUrl = 'api/file/getFilesPost' + queryParams;
-    return this.currentUrl;
+    throw new Error("No path set for file browser");
   }
 
   ngOnInit() {
@@ -79,10 +98,18 @@ export class FileBrowserComponent implements OnInit {
     let pathParam = params.get("path");
     if (pathParam != null && pathParam != "") {
       this.filePath = pathParam;
-    } else if (window.location.pathname == "/tv") {
+    } else if (window.location.pathname == "/files/tv") {
       this.filePath = "/torrent/TV"
-    } else if (window.location.pathname == "/film") {
+      this.folderMode = false;
+    } else if (window.location.pathname == "/files/film") {
       this.filePath = "/torrent/Film"
+      this.folderMode = false;
+    } else if (window.location.pathname == "/directories/film") {
+      this.folderPath = "/torrent/Film"
+      this.folderMode = true;
+    } else if (window.location.pathname == "/directories/tv") {
+      this.folderPath = "/torrent/TV"
+      this.folderMode = true;
     }
     this.load();
   }

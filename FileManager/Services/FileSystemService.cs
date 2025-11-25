@@ -6,9 +6,11 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
+using DocumentFormat.OpenXml.Office2010.ExcelAc;
 using FileManager.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Newtonsoft.Json;
+using DirectoryInfo = FileManager.Models.DirectoryInfo;
 using FileInfo = FileManager.Models.FileInfo;
 
 namespace FileManager.Services;
@@ -60,6 +62,24 @@ public class FileSystemService
 
         return output;
     }
+    
+    public List<DirectoryInfo> GetDirectoriesInDirectory(string directoryPath,bool? folderInQbit = null, bool clearCache = false)
+    {
+        List<FileInfo> files = GetFilesInDirectory(directoryPath, null, null, folderInQbit, null, clearCache);
+        var grouped = files.GroupBy(f => f.FolderPath);
+        var folders = new List<DirectoryInfo>();
+        foreach (var group in grouped)
+        {
+            folders.Add(new DirectoryInfo()
+            {
+                Path = group.Key,
+                FileCount = group.Count(),
+                FolderInQbit = group.Any(f => f.FolderInQbit),
+                Size = group.Sum(f => f.Size)
+            });
+        }
+        return folders;
+    }
 
     public List<FileInfo> GetFilesInDirectory(string directoryPath, bool? hardlink = null, bool? inQbit = null,
         bool? folderInQbit = null, bool? hashDuplicate = null, bool clearCache = false)
@@ -69,8 +89,7 @@ public class FileSystemService
         var inodeMap = new Dictionary<(ulong dev, ulong ino), List<(string path, long size)>>();
         int scanned = 0;
         // sha1 hash the directory path for cache
-        var directoryHashed = Convert.ToHexString(SHA1.HashData(System.Text.Encoding.UTF8.GetBytes(directoryPath)));
-        var cachePath = "/qbit_data/" + directoryHashed + "_file_cache.json";
+        var cachePath = "/qbit_data/file_cache.json";
         if (clearCache)
         {
             if (File.Exists(cachePath))
@@ -81,7 +100,7 @@ public class FileSystemService
 
         if (File.Exists(cachePath))
         {
-            return  JsonConvert.DeserializeObject<List<FileInfo>>(File.ReadAllText(cachePath)).FilterResults(hardlink, inQbit, folderInQbit, hashDuplicate);
+            return  JsonConvert.DeserializeObject<List<FileInfo>>(File.ReadAllText(cachePath)).FilterResults(directoryPath, hardlink, inQbit, folderInQbit, hashDuplicate);
         }
 
         // Step 1: Scan all files and collect size + inode
@@ -123,19 +142,17 @@ public class FileSystemService
         int processedInodes = 0;
         object lockObj = new object();
 
-        Parallel.ForEach(inodeList,
-            new ParallelOptions { MaxDegreeOfParallelism = 16 },
-            inodeEntry =>
+        Parallel.ForEach(inodeList, inodeEntry =>
             {
                 var firstFile = inodeEntry.files[0];
-                string hash = ComputePartialHash(firstFile.path, 1024 * 1024*32); // 32 MB
+                string hash = ComputePartialHash(firstFile.path, 1024 * 1024*8); // 8 MB
                 var key = (inodeEntry.dev, inodeEntry.ino);
                 inodeHashes[key] = hash;
 
                 lock (lockObj)
                 {
                     processedInodes++;
-                    if (processedInodes % 10 == 0 || processedInodes == totalInodes)
+                    if (processedInodes % 50 == 0 || processedInodes == totalInodes)
                     {
                         double pct = processedInodes * 100.0 / totalInodes;
                         Console.WriteLine($"Computed hashes for {processedInodes}/{totalInodes} inodes ({pct:F2}%)");
@@ -173,7 +190,7 @@ public class FileSystemService
         Console.WriteLine("Total In Qbittorrent: " + result.Count(f => f.InQbit));
         Console.WriteLine("Total Folder In Qbittorrent: " + result.Count(f => f.FolderInQbit));
         File.WriteAllText(cachePath, JsonConvert.SerializeObject(result));
-        result =  result.FilterResults(hardlink, inQbit, folderInQbit, hashDuplicate);
+        result =  result.FilterResults(directoryPath, hardlink, inQbit, folderInQbit, hashDuplicate);
         return result;
     }
 

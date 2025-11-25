@@ -20,19 +20,30 @@
           </svg>
           Torrent files
         </a></li>
-        <li><a href="/film" class="nav-link text-white" [class.active]="this.globalFunctionsService.getUrl() == '/film'">
+        <li><a href="/files/film" class="nav-link text-white" [class.active]="this.globalFunctionsService.getUrl() == '/files/film'">
           <svg class="bi pe-none me-2" width="16" height="16" aria-hidden="true">
             <use xlink:href="#table"></use>
           </svg>
-          Filesystem - Film
+          Files - Film
         </a></li>
-        <li><a href="/tv" class="nav-link text-white" [class.active]="this.globalFunctionsService.getUrl() == '/tv'">
+        <li><a href="/files/tv" class="nav-link text-white" [class.active]="this.globalFunctionsService.getUrl() == '/files/tv'">
           <svg class="bi pe-none me-2" width="16" height="16" aria-hidden="true">
             <use xlink:href="#table"></use>
           </svg>
-          Filesystem - TV
+          Files - TV
         </a></li>
-
+        <li><a href="/directories/film" class="nav-link text-white" [class.active]="this.globalFunctionsService.getUrl() == '/directories/film'">
+          <svg class="bi pe-none me-2" width="16" height="16" aria-hidden="true">
+            <use xlink:href="#table"></use>
+          </svg>
+          Directories - Film
+        </a></li>
+        <li><a href="/directories/tv" class="nav-link text-white" [class.active]="this.globalFunctionsService.getUrl() == '/directories/tv'">
+          <svg class="bi pe-none me-2" width="16" height="16" aria-hidden="true">
+            <use xlink:href="#table"></use>
+          </svg>
+          Directories - TV
+        </a></li>
       </ul>
     </div>
   </div>

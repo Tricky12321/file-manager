@@ -1,4 +1,4 @@
-<h1>File dashboard ({{ this.filePath }})</h1>
+<h1>File dashboard ({{ !this.folderMode ? this.filePath : this.folderPath }})</h1>
 @if (this.loading) {
   <i class="fa fa-spinner fa-spin fa-3x fa-fw"></i>
 }
@@ -64,7 +64,7 @@
     <button class="btn btn-secondary mt-4" (click)="this.load(true)">Refresh data</button>
   </div>
 </div>
-@if (this.fileService != null) {
+@if (this.folderMode == false) {
   <simple-table
     [serverSide]="true"
     [url]="this.buildUrl()"
@@ -118,4 +118,44 @@
       </td>
     </tr>
   </ng-template>
+} @else if (this.folderMode) {
+  @if (this.folderMode == false) {
+    <simple-table
+      [serverSide]="true"
+      [url]="this.buildUrl()"
+      [template]="rowTemplateServer"
+      [loadingText]="'Henter filer...'"
+    >
+      <thead>
+      <tr>
+        <th></th>
+        <th data-column-key="Path" >Path</th>
+        <th data-column-key="Size" >Size</th>
+        <th data-column-key="FolderInQbit" >Folder in Qbit</th>
+        <th></th>
+      </tr>
+      </thead>
+    </simple-table>
+
+    <ng-template #rowTemplateServer let-fileInfo="row">
+      <tr>
+        <td>
+          <input type="checkbox" [(ngModel)]="fileInfo.selected"/>
+        </td>
+        <td>{{ fileInfo.path }}</td>
+        <td
+          [attr.data-sort]="fileInfo.size">{{ fileInfo.sizeGb > 1 ? fileInfo.sizeGb + " GB" : fileInfo.sizeMb + " MB" }}
+        </td>
+        <td>
+          <i class="fa" [class.text-danger]="!fileInfo.folderInQbit" [class.fa-times]="!fileInfo.folderInQbit"
+             [class.text-success]="fileInfo.folderInQbit" [class.fa-check]="fileInfo.folderInQbit"></i>
+        </td>
+        <td [attr.data-sort]="fileInfo.partialHash">{{fileInfo.partialHash}}</td>
+        <td>
+          <button class="btn btn-warning" (click)="openFolder(fileInfo)">Open Folder</button>
+        </td>
+      </tr>
+    </ng-template>
+  }
+
 }
