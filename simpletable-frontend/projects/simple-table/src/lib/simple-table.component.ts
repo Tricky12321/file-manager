@@ -1,5 +1,7 @@
 import {Component, ElementRef, EventEmitter, Input, Output, Renderer2, TemplateRef, ViewChild} from '@angular/core';
 import {HttpClient} from '@angular/common/http';
+import { TableResult } from './models/TableResponse';
+import { TableRequest } from './models/TableRequest';
 
 @Component({
   selector: 'simple-table',
@@ -7,10 +9,10 @@ import {HttpClient} from '@angular/common/http';
   templateUrl: './simple-table.component.html',
   styleUrls: ['simple-table.component.scss'],
 })
-export class SimpleTableComponent {
+export class SimpleTableComponent<T> {
   @Input() data: any[] = [];             // client-side data
   @Input() serverSide = false;           // toggle client/server mode
-  @Input() template!: TemplateRef<any>;  // row template
+  @Input() template!: TemplateRef<T>;  // row template
   @Input() pageSize: number = 10;
   @Input() loadingText: string = 'Loading...';
   // Should be the URL to post TableRequest to and get TableResult<any> from
@@ -34,7 +36,6 @@ export class SimpleTableComponent {
   private currentSortIndex: number | null = null;
   private currentSortAsc = true;
 
-  @ViewChild('searchInput', {static: false}) searchInput: ElementRef<HTMLInputElement> | undefined;
   public startIndex: number = 1;
   public endIndex: number = 1;
   public totalItemCount: number = 0;
