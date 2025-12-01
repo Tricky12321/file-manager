@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using SimpleTableDemo.Context;
 using SimpleTableDemo.Models;
 
@@ -5,7 +6,7 @@ namespace FileManager;
 
 public class DatabaseService : ContextService
 {
-    public IQueryable<Car> Cars => Context.Cars;
+    public IQueryable<Car> Cars => Context.Cars.Include(x => x.CarMaker);
 
     public static void SeedDatabase()
     {
@@ -17,93 +18,146 @@ public class DatabaseService : ContextService
         // If there are already cars, don't seed again
         if (context.Cars.Any())
             return;
-        
+
         Console.WriteLine("Seeding database...");
+
+        var carMakers = new Dictionary<int, CarMaker>
+        {
+            { 1, new CarMaker { CarMakerId = 1, Brand = "Toyota", HomeCountry = "Japan" } },
+            { 2, new CarMaker { CarMakerId = 2, Brand = "Honda", HomeCountry = "Japan" } },
+            { 3, new CarMaker { CarMakerId = 3, Brand = "Nissan", HomeCountry = "Japan" } },
+            { 4, new CarMaker { CarMakerId = 4, Brand = "Mazda", HomeCountry = "Japan" } },
+            { 5, new CarMaker { CarMakerId = 5, Brand = "Subaru", HomeCountry = "Japan" } },
+            { 6, new CarMaker { CarMakerId = 6, Brand = "Ford", HomeCountry = "USA" } },
+            { 7, new CarMaker { CarMakerId = 7, Brand = "Chevrolet", HomeCountry = "USA" } },
+            { 8, new CarMaker { CarMakerId = 8, Brand = "Tesla", HomeCountry = "USA" } },
+            { 9, new CarMaker { CarMakerId = 9, Brand = "Dodge", HomeCountry = "USA" } },
+            { 10, new CarMaker { CarMakerId = 10, Brand = "BMW", HomeCountry = "Germany" } },
+            { 11, new CarMaker { CarMakerId = 11, Brand = "Audi", HomeCountry = "Germany" } },
+            { 12, new CarMaker { CarMakerId = 12, Brand = "Mercedes-Benz", HomeCountry = "Germany" } },
+            { 13, new CarMaker { CarMakerId = 13, Brand = "Volkswagen", HomeCountry = "Germany" } },
+            { 14, new CarMaker { CarMakerId = 14, Brand = "Hyundai", HomeCountry = "South Korea" } },
+            { 15, new CarMaker { CarMakerId = 15, Brand = "Kia", HomeCountry = "South Korea" } }
+        };
+
 
         var cars = new[]
         {
-            new Car { Make = "Toyota", Model = "Camry", Year = 2020, Color = "Blue" },
-            new Car { Make = "Honda", Model = "Civic", Year = 2019, Color = "Red" },
-            new Car { Make = "Ford", Model = "Mustang", Year = 2021, Color = "Black" },
-            new Car { Make = "Chevrolet", Model = "Malibu", Year = 2018, Color = "White" },
-            new Car { Make = "Nissan", Model = "Altima", Year = 2020, Color = "Gray" },
-            new Car { Make = "BMW", Model = "3 Series", Year = 2021, Color = "Silver" },
-            new Car { Make = "Audi", Model = "A4", Year = 2019, Color = "Blue" },
-            new Car { Make = "Mercedes-Benz", Model = "C-Class", Year = 2020, Color = "Black" },
-            new Car { Make = "Volkswagen", Model = "Passat", Year = 2018, Color = "Red" },
-            new Car { Make = "Hyundai", Model = "Sonata", Year = 2021, Color = "White" },
-            new Car { Make = "Toyota", Model = "Corolla", Year = 2017, Color = "Black" },
-            new Car { Make = "Honda", Model = "Accord", Year = 2020, Color = "White" },
-            new Car { Make = "Ford", Model = "Fusion", Year = 2019, Color = "Gray" },
-            new Car { Make = "Chevrolet", Model = "Impala", Year = 2021, Color = "Blue" },
-            new Car { Make = "Nissan", Model = "Sentra", Year = 2018, Color = "Silver" },
-            new Car { Make = "BMW", Model = "5 Series", Year = 2020, Color = "Black" },
-            new Car { Make = "Audi", Model = "A6", Year = 2021, Color = "White" },
-            new Car { Make = "Mercedes-Benz", Model = "E-Class", Year = 2019, Color = "Gray" },
-            new Car { Make = "Volkswagen", Model = "Jetta", Year = 2020, Color = "Blue" },
-            new Car { Make = "Hyundai", Model = "Elantra", Year = 2018, Color = "Red" },
-            new Car { Make = "Toyota", Model = "RAV4", Year = 2021, Color = "Gray" },
-            new Car { Make = "Honda", Model = "CR-V", Year = 2019, Color = "Blue" },
-            new Car { Make = "Ford", Model = "Explorer", Year = 2020, Color = "Black" },
-            new Car { Make = "Chevrolet", Model = "Traverse", Year = 2021, Color = "White" },
-            new Car { Make = "Nissan", Model = "Rogue", Year = 2017, Color = "Red" },
-            new Car { Make = "BMW", Model = "X3", Year = 2019, Color = "Gray" },
-            new Car { Make = "Audi", Model = "Q5", Year = 2020, Color = "Black" },
-            new Car { Make = "Mercedes-Benz", Model = "GLC", Year = 2021, Color = "Silver" },
-            new Car { Make = "Volkswagen", Model = "Tiguan", Year = 2019, Color = "White" },
-            new Car { Make = "Hyundai", Model = "Tucson", Year = 2020, Color = "Blue" },
-            new Car { Make = "Toyota", Model = "Highlander", Year = 2018, Color = "Red" },
-            new Car { Make = "Honda", Model = "Pilot", Year = 2021, Color = "Black" },
-            new Car { Make = "Ford", Model = "Escape", Year = 2017, Color = "Gray" },
-            new Car { Make = "Chevrolet", Model = "Equinox", Year = 2019, Color = "Silver" },
-            new Car { Make = "Nissan", Model = "Murano", Year = 2020, Color = "White" },
-            new Car { Make = "BMW", Model = "X5", Year = 2021, Color = "Blue" },
-            new Car { Make = "Audi", Model = "Q7", Year = 2018, Color = "Black" },
-            new Car { Make = "Mercedes-Benz", Model = "GLE", Year = 2020, Color = "Gray" },
-            new Car { Make = "Volkswagen", Model = "Atlas", Year = 2021, Color = "Red" },
-            new Car { Make = "Hyundai", Model = "Santa Fe", Year = 2019, Color = "White" },
-            new Car { Make = "Toyota", Model = "Prius", Year = 2020, Color = "Green" },
-            new Car { Make = "Honda", Model = "Insight", Year = 2021, Color = "Silver" },
-            new Car { Make = "Ford", Model = "Focus", Year = 2018, Color = "Blue" },
-            new Car { Make = "Chevrolet", Model = "Spark", Year = 2020, Color = "Yellow" },
-            new Car { Make = "Nissan", Model = "Leaf", Year = 2019, Color = "White" },
-            new Car { Make = "BMW", Model = "i3", Year = 2020, Color = "Black" },
-            new Car { Make = "Audi", Model = "A3", Year = 2021, Color = "Red" },
-            new Car { Make = "Mercedes-Benz", Model = "A-Class", Year = 2018, Color = "White" },
-            new Car { Make = "Volkswagen", Model = "Golf", Year = 2019, Color = "Blue" },
-            new Car { Make = "Hyundai", Model = "Ioniq", Year = 2021, Color = "Silver" },
-            new Car { Make = "Toyota", Model = "Tacoma", Year = 2019, Color = "Gray" },
-            new Car { Make = "Honda", Model = "Ridgeline", Year = 2020, Color = "Black" },
-            new Car { Make = "Ford", Model = "F-150", Year = 2021, Color = "Blue" },
-            new Car { Make = "Chevrolet", Model = "Silverado", Year = 2019, Color = "Red" },
-            new Car { Make = "Nissan", Model = "Frontier", Year = 2021, Color = "White" },
-            new Car { Make = "BMW", Model = "X6", Year = 2018, Color = "Black" },
-            new Car { Make = "Audi", Model = "A5", Year = 2020, Color = "Silver" },
-            new Car { Make = "Mercedes-Benz", Model = "CLA", Year = 2019, Color = "Blue" },
-            new Car { Make = "Volkswagen", Model = "Arteon", Year = 2021, Color = "Gray" },
-            new Car { Make = "Hyundai", Model = "Veloster", Year = 2020, Color = "Red" },
-            new Car { Make = "Toyota", Model = "4Runner", Year = 2021, Color = "Black" },
-            new Car { Make = "Honda", Model = "HR-V", Year = 2018, Color = "White" },
-            new Car { Make = "Ford", Model = "Bronco", Year = 2021, Color = "Green" },
-            new Car { Make = "Chevrolet", Model = "Blazer", Year = 2020, Color = "Black" },
-            new Car { Make = "Nissan", Model = "Kicks", Year = 2019, Color = "Orange" },
-            new Car { Make = "BMW", Model = "2 Series", Year = 2021, Color = "Blue" },
-            new Car { Make = "Audi", Model = "Q3", Year = 2019, Color = "White" },
-            new Car { Make = "Mercedes-Benz", Model = "GLA", Year = 2021, Color = "Gray" },
-            new Car { Make = "Volkswagen", Model = "ID.4", Year = 2021, Color = "Silver" },
-            new Car { Make = "Hyundai", Model = "Kona", Year = 2019, Color = "Blue" },
-            new Car { Make = "Toyota", Model = "Supra", Year = 2020, Color = "Red" },
-            new Car { Make = "Honda", Model = "S2000", Year = 2009, Color = "Yellow" },
-            new Car { Make = "Ford", Model = "GT", Year = 2006, Color = "Blue" },
-            new Car { Make = "Chevrolet", Model = "Corvette", Year = 2021, Color = "Red" },
-            new Car { Make = "Nissan", Model = "370Z", Year = 2020, Color = "Black" },
-            new Car { Make = "BMW", Model = "M4", Year = 2021, Color = "Yellow" },
-            new Car { Make = "Audi", Model = "RS5", Year = 2020, Color = "Green" },
-            new Car { Make = "Mercedes-Benz", Model = "AMG GT", Year = 2021, Color = "Silver" },
-            new Car { Make = "Volkswagen", Model = "Beetle", Year = 2018, Color = "White" },
-            new Car { Make = "Hyundai", Model = "Genesis Coupe", Year = 2016, Color = "Black" }
-        };
+            // --- Toyota ---
+            new Car { CarMakerId = 1, CarMaker = carMakers[1], Model = "Camry", Year = 2020, Color = "Blue" },
+            new Car { CarMakerId = 1, CarMaker = carMakers[1], Model = "Corolla", Year = 2021, Color = "White" },
+            new Car { CarMakerId = 1, CarMaker = carMakers[1], Model = "RAV4", Year = 2019, Color = "Gray" },
+            new Car { CarMakerId = 1, CarMaker = carMakers[1], Model = "Highlander", Year = 2022, Color = "Black" },
+            new Car { CarMakerId = 1, CarMaker = carMakers[1], Model = "Prius", Year = 2018, Color = "Green" },
+            new Car { CarMakerId = 1, CarMaker = carMakers[1], Model = "Yaris", Year = 2017, Color = "Silver" },
 
+            // --- Honda ---
+            new Car { CarMakerId = 2, CarMaker = carMakers[2], Model = "Civic", Year = 2020, Color = "Red" },
+            new Car { CarMakerId = 2, CarMaker = carMakers[2], Model = "Accord", Year = 2019, Color = "Gray" },
+            new Car { CarMakerId = 2, CarMaker = carMakers[2], Model = "CR-V", Year = 2021, Color = "Blue" },
+            new Car { CarMakerId = 2, CarMaker = carMakers[2], Model = "Pilot", Year = 2022, Color = "Black" },
+            new Car { CarMakerId = 2, CarMaker = carMakers[2], Model = "Fit", Year = 2018, Color = "White" },
+            new Car { CarMakerId = 2, CarMaker = carMakers[2], Model = "HR-V", Year = 2020, Color = "Silver" },
+
+            // --- Nissan ---
+            new Car { CarMakerId = 3, CarMaker = carMakers[3], Model = "Altima", Year = 2020, Color = "Gray" },
+            new Car { CarMakerId = 3, CarMaker = carMakers[3], Model = "Maxima", Year = 2018, Color = "Black" },
+            new Car { CarMakerId = 3, CarMaker = carMakers[3], Model = "Rogue", Year = 2021, Color = "White" },
+            new Car { CarMakerId = 3, CarMaker = carMakers[3], Model = "Sentra", Year = 2019, Color = "Red" },
+            new Car { CarMakerId = 3, CarMaker = carMakers[3], Model = "Frontier", Year = 2022, Color = "Blue" },
+            new Car { CarMakerId = 3, CarMaker = carMakers[3], Model = "Leaf", Year = 2020, Color = "Green" },
+
+            // --- Mazda ---
+            new Car { CarMakerId = 4, CarMaker = carMakers[4], Model = "Mazda3", Year = 2020, Color = "White" },
+            new Car { CarMakerId = 4, CarMaker = carMakers[4], Model = "Mazda6", Year = 2018, Color = "Black" },
+            new Car { CarMakerId = 4, CarMaker = carMakers[4], Model = "CX-5", Year = 2021, Color = "Blue" },
+            new Car { CarMakerId = 4, CarMaker = carMakers[4], Model = "CX-30", Year = 2022, Color = "Gray" },
+            new Car { CarMakerId = 4, CarMaker = carMakers[4], Model = "MX-5", Year = 2019, Color = "Red" },
+            new Car { CarMakerId = 4, CarMaker = carMakers[4], Model = "CX-9", Year = 2020, Color = "Silver" },
+
+            // --- Subaru ---
+            new Car { CarMakerId = 5, CarMaker = carMakers[5], Model = "Impreza", Year = 2019, Color = "Blue" },
+            new Car { CarMakerId = 5, CarMaker = carMakers[5], Model = "Outback", Year = 2021, Color = "Green" },
+            new Car { CarMakerId = 5, CarMaker = carMakers[5], Model = "Forester", Year = 2020, Color = "Gray" },
+            new Car { CarMakerId = 5, CarMaker = carMakers[5], Model = "BRZ", Year = 2022, Color = "Red" },
+            new Car { CarMakerId = 5, CarMaker = carMakers[5], Model = "Crosstrek", Year = 2021, Color = "Black" },
+            new Car { CarMakerId = 5, CarMaker = carMakers[5], Model = "Legacy", Year = 2018, Color = "White" },
+
+            // --- Ford ---
+            new Car { CarMakerId = 6, CarMaker = carMakers[6], Model = "Mustang", Year = 2021, Color = "Yellow" },
+            new Car { CarMakerId = 6, CarMaker = carMakers[6], Model = "F-150", Year = 2022, Color = "Silver" },
+            new Car { CarMakerId = 6, CarMaker = carMakers[6], Model = "Explorer", Year = 2020, Color = "Black" },
+            new Car { CarMakerId = 6, CarMaker = carMakers[6], Model = "Edge", Year = 2019, Color = "Blue" },
+            new Car { CarMakerId = 6, CarMaker = carMakers[6], Model = "Escape", Year = 2020, Color = "White" },
+            new Car { CarMakerId = 6, CarMaker = carMakers[6], Model = "Fusion", Year = 2018, Color = "Gray" },
+
+            // --- Chevrolet ---
+            new Car { CarMakerId = 7, CarMaker = carMakers[7], Model = "Malibu", Year = 2019, Color = "White" },
+            new Car { CarMakerId = 7, CarMaker = carMakers[7], Model = "Impala", Year = 2018, Color = "Black" },
+            new Car { CarMakerId = 7, CarMaker = carMakers[7], Model = "Silverado", Year = 2021, Color = "Red" },
+            new Car { CarMakerId = 7, CarMaker = carMakers[7], Model = "Tahoe", Year = 2022, Color = "Blue" },
+            new Car { CarMakerId = 7, CarMaker = carMakers[7], Model = "Camaro", Year = 2020, Color = "Yellow" },
+            new Car { CarMakerId = 7, CarMaker = carMakers[7], Model = "Blazer", Year = 2019, Color = "Gray" },
+
+            // --- Tesla ---
+            new Car { CarMakerId = 8, CarMaker = carMakers[8], Model = "Model 3", Year = 2021, Color = "White" },
+            new Car { CarMakerId = 8, CarMaker = carMakers[8], Model = "Model S", Year = 2020, Color = "Black" },
+            new Car { CarMakerId = 8, CarMaker = carMakers[8], Model = "Model X", Year = 2022, Color = "Blue" },
+            new Car { CarMakerId = 8, CarMaker = carMakers[8], Model = "Model Y", Year = 2021, Color = "Gray" },
+
+            // --- Dodge ---
+            new Car { CarMakerId = 9, CarMaker = carMakers[9], Model = "Charger", Year = 2020, Color = "Black" },
+            new Car { CarMakerId = 9, CarMaker = carMakers[9], Model = "Challenger", Year = 2021, Color = "Red" },
+            new Car { CarMakerId = 9, CarMaker = carMakers[9], Model = "Durango", Year = 2019, Color = "White" },
+            new Car { CarMakerId = 9, CarMaker = carMakers[9], Model = "Journey", Year = 2018, Color = "Silver" },
+
+            // --- BMW ---
+            new Car { CarMakerId = 10, CarMaker = carMakers[10], Model = "3 Series", Year = 2021, Color = "Black" },
+            new Car { CarMakerId = 10, CarMaker = carMakers[10], Model = "5 Series", Year = 2020, Color = "White" },
+            new Car { CarMakerId = 10, CarMaker = carMakers[10], Model = "X3", Year = 2019, Color = "Blue" },
+            new Car { CarMakerId = 10, CarMaker = carMakers[10], Model = "X5", Year = 2021, Color = "Gray" },
+            new Car { CarMakerId = 10, CarMaker = carMakers[10], Model = "M3", Year = 2022, Color = "Red" },
+            new Car { CarMakerId = 10, CarMaker = carMakers[10], Model = "M4", Year = 2022, Color = "Yellow" },
+
+            // --- Audi ---
+            new Car { CarMakerId = 11, CarMaker = carMakers[11], Model = "A4", Year = 2020, Color = "White" },
+            new Car { CarMakerId = 11, CarMaker = carMakers[11], Model = "A6", Year = 2019, Color = "Black" },
+            new Car { CarMakerId = 11, CarMaker = carMakers[11], Model = "Q5", Year = 2021, Color = "Gray" },
+            new Car { CarMakerId = 11, CarMaker = carMakers[11], Model = "Q7", Year = 2022, Color = "Blue" },
+            new Car { CarMakerId = 11, CarMaker = carMakers[11], Model = "RS5", Year = 2020, Color = "Red" },
+            new Car { CarMakerId = 11, CarMaker = carMakers[11], Model = "S4", Year = 2021, Color = "Silver" },
+
+            // --- Mercedes-Benz ---
+            new Car { CarMakerId = 12, CarMaker = carMakers[12], Model = "C-Class", Year = 2020, Color = "Black" },
+            new Car { CarMakerId = 12, CarMaker = carMakers[12], Model = "E-Class", Year = 2021, Color = "White" },
+            new Car { CarMakerId = 12, CarMaker = carMakers[12], Model = "S-Class", Year = 2022, Color = "Silver" },
+            new Car { CarMakerId = 12, CarMaker = carMakers[12], Model = "GLA", Year = 2020, Color = "Red" },
+            new Car { CarMakerId = 12, CarMaker = carMakers[12], Model = "GLC", Year = 2021, Color = "Blue" },
+            new Car { CarMakerId = 12, CarMaker = carMakers[12], Model = "AMG GT", Year = 2022, Color = "Yellow" },
+
+            // --- Volkswagen ---
+            new Car { CarMakerId = 13, CarMaker = carMakers[13], Model = "Golf", Year = 2019, Color = "Blue" },
+            new Car { CarMakerId = 13, CarMaker = carMakers[13], Model = "Passat", Year = 2018, Color = "White" },
+            new Car { CarMakerId = 13, CarMaker = carMakers[13], Model = "Tiguan", Year = 2021, Color = "Gray" },
+            new Car { CarMakerId = 13, CarMaker = carMakers[13], Model = "Jetta", Year = 2020, Color = "Silver" },
+            new Car { CarMakerId = 13, CarMaker = carMakers[13], Model = "ID.4", Year = 2022, Color = "Black" },
+
+            // --- Hyundai ---
+            new Car { CarMakerId = 14, CarMaker = carMakers[14], Model = "Sonata", Year = 2021, Color = "Red" },
+            new Car { CarMakerId = 14, CarMaker = carMakers[14], Model = "Elantra", Year = 2020, Color = "White" },
+            new Car { CarMakerId = 14, CarMaker = carMakers[14], Model = "Kona", Year = 2022, Color = "Green" },
+            new Car { CarMakerId = 14, CarMaker = carMakers[14], Model = "Tucson", Year = 2021, Color = "Gray" },
+            new Car { CarMakerId = 14, CarMaker = carMakers[14], Model = "Santa Fe", Year = 2019, Color = "Blue" },
+
+            // --- Kia ---
+            new Car { CarMakerId = 15, CarMaker = carMakers[15], Model = "Optima", Year = 2018, Color = "White" },
+            new Car { CarMakerId = 15, CarMaker = carMakers[15], Model = "Sorento", Year = 2021, Color = "Black" },
+            new Car { CarMakerId = 15, CarMaker = carMakers[15], Model = "Sportage", Year = 2020, Color = "Blue" },
+            new Car { CarMakerId = 15, CarMaker = carMakers[15], Model = "Soul", Year = 2019, Color = "Yellow" },
+            new Car { CarMakerId = 15, CarMaker = carMakers[15], Model = "Stinger", Year = 2022, Color = "Red" }
+        };
+        context.CarMakers.AddRange(carMakers.Select(x => x.Value).ToList());
+        context.SaveChanges();
         context.Cars.AddRange(cars);
         context.SaveChanges();
     }

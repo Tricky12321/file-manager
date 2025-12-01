@@ -10,12 +10,12 @@ public class IndexController (DatabaseService databaseService) : Controller
     [HttpPost("/")]
     public IActionResult GetPostData([FromBody] TableRequest tableRequest)
     {
-        return Ok(databaseService.Cars.ToTableResponse(tableRequest));
+        return Ok(databaseService.Cars.ToTableResponseDeep(tableRequest));
     }
     
     [HttpGet("/")]
     public IActionResult GetData()
     {
-        return Ok(databaseService.Cars.ToTableResponse(Request.GetTableRequest()));
+        return Ok(databaseService.Cars.ToTableResponseDeep(Request.GetTableRequest()));
     }
 }
