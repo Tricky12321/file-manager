@@ -7,8 +7,7 @@ namespace SimpleTable;
 
 public static class Extensions
 {
-    public static TableResult<T> ToTableResponseDeep<T>(this IQueryable<T> query, TableRequest tableRequest = null,
-        int maxObjectDepthsearch = 3)
+    public static TableResult<T> ToTableResponse<T>(this IQueryable<T> query, TableRequest tableRequest = null, int maxObjectDepthsearch = 3)
     {
         // Count BEFORE filtering/paging (same behavior as your original)
         var totalResults = query.Count();
@@ -32,7 +31,7 @@ public static class Extensions
             var searchLower = tableRequest.Search.ToLower();
 
             var visitedTypes = new HashSet<Type>();
-            var body = BuildSearchExpression(typeof(T), parameter, 0, visitedTypes, maxObjectDepthsearch, searchLower);
+            var body = BuildSearchExpressionIEnumerable(typeof(T), parameter, 0, visitedTypes, maxObjectDepthsearch, searchLower);
 
             if (body != null)
             {
@@ -83,73 +82,12 @@ public static class Extensions
         };
     }
 
-    public static TableResult<T> ToTableResponse<T>(this IEnumerable<T> results, TableRequest tableRequest = null)
+    public static TableResult<T> ToTableResponse<T>(this IEnumerable<T> source, TableRequest tableRequest = null, int maxObjectDepthsearch = 3)
     {
-        var totalResults = results.Count();
-        if (tableRequest == null)
-        {
-            tableRequest = new TableRequest()
-            {
-                PageNumber = 1,
-                PageSize = totalResults,
-                Search = string.Empty,
-                SortColumn = null,
-                SortDirection = null
-            };
-        }
+        // materialize immediately (IEnumerable is pull-based)
+        var query = source;
 
-        // Apply search filter
-        if (!string.IsNullOrWhiteSpace(tableRequest.Search))
-        {
-            // Search all fields that are strings or can be cast to string, should use reflection to do this
-            results = results.Where(r =>
-            {
-                var properties = r.GetType().GetProperties();
-                foreach (var prop in properties)
-                {
-                    if (prop.PropertyType == typeof(string) || prop.PropertyType.IsValueType)
-                    {
-                        var value = prop.GetValue(r)?.ToString();
-                        if (value != null && value.Contains(tableRequest.Search, StringComparison.OrdinalIgnoreCase))
-                        {
-                            return true;
-                        }
-                    }
-                }
-
-                return false;
-            }).ToList();
-        }
-
-
-        // Apply sorting
-        if (tableRequest.SortColumn != null)
-        {
-            //Extensions.GetPropertyValues(results.First());
-            results = tableRequest.SortDirection == "desc"
-                ? results.OrderByDescending(r =>
-                {
-                    return r.GetType().GetProperty(tableRequest.SortColumn)?.GetValue(r);
-                }).ToList()
-                : results.OrderBy(r => { return r.GetType().GetProperty(tableRequest.SortColumn)?.GetValue(r); })
-                    .ToList();
-        }
-
-        // Apply pagination
-        results = results.Skip((tableRequest.PageNumber - 1) * tableRequest.PageSize)
-            .Take(tableRequest.PageSize)
-            .ToList();
-        var output = new TableResult<T>()
-        {
-            Items = results,
-            TotalCount = totalResults,
-        };
-        return output;
-    }
-
-    public static TableResult<T> ToTableResponse<T>(this IQueryable<T> query, TableRequest tableRequest = null)
-    {
-        var totalResults = query.Count(); // same as your original: pre-filter count
+        var totalResults = query.Count();
 
         if (tableRequest == null)
         {
@@ -163,79 +101,56 @@ public static class Extensions
             };
         }
 
-        // ----- Search (only on string properties) -----
+        // ========= SEARCH (still uses Expression but runs in-memory) =========
         if (!string.IsNullOrWhiteSpace(tableRequest.Search))
         {
-            var search = tableRequest.Search.ToLower();
             var parameter = Expression.Parameter(typeof(T), "x");
+            var searchLower = tableRequest.Search.ToLower();
 
-            var stringProperties = typeof(T)
-                .GetProperties()
-                .Where(p => p.PropertyType == typeof(string))
-                .ToList();
+            var visitedTypes = new HashSet<Type>();
+            var body = BuildSearchExpressionIEnumerable(
+                typeof(T),
+                parameter,
+                0,
+                visitedTypes,
+                maxObjectDepthsearch,
+                searchLower);
 
-
-            foreach (var prop in stringProperties)
+            if (body != null)
             {
-                var propAccess = Expression.Property(parameter, prop);
-                var notNull = Expression.NotEqual(
-                    propAccess,
-                    Expression.Constant(null, typeof(string)));
-                var toLower = Expression.Call(
-                    propAccess,
-                    nameof(string.ToLower),
-                    Type.EmptyTypes);
-                var contains = Expression.Call(
-                    toLower,
-                    nameof(string.Contains),
-                    Type.EmptyTypes,
-                    Expression.Constant(search));
-
-                var andExpr = Expression.AndAlso(notNull, contains);
-
-                var lambda = Expression.Lambda<Func<T, bool>>(andExpr, parameter);
-                query = query.Where(lambda);
+                var lambda = Expression.Lambda<Func<T, bool>>(body, parameter);
+                query = query.Where(lambda.Compile()); // Enumerable version
             }
         }
 
-        // ----- Sorting -----
+        // ========= SORTING (LINQ-to-Objects) =========
         if (!string.IsNullOrWhiteSpace(tableRequest.SortColumn))
         {
-            var parameter = Expression.Parameter(typeof(T), "x");
-            var property = typeof(T).GetProperty(tableRequest.SortColumn);
+            var prop = typeof(T).GetProperty(
+                tableRequest.SortColumn,
+                BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
 
-            if (property != null)
+            if (prop != null)
             {
-                var propertyAccess = Expression.Property(parameter, property);
-                var orderByExp = Expression.Lambda(propertyAccess, parameter);
+                Func<T, object> keySelector = x => prop.GetValue(x);
 
-                var methodName = tableRequest.SortDirection?.ToLower() == "desc"
-                    ? "OrderByDescending"
-                    : "OrderBy";
-
-                var resultExp = Expression.Call(
-                    typeof(Queryable),
-                    methodName,
-                    new[] { typeof(T), property.PropertyType },
-                    query.Expression,
-                    Expression.Quote(orderByExp));
-
-                query = query.Provider.CreateQuery<T>(resultExp);
+                query = (tableRequest.SortDirection?.Equals("desc", StringComparison.OrdinalIgnoreCase) == true)
+                    ? query.OrderByDescending(keySelector)
+                    : query.OrderBy(keySelector);
             }
         }
 
-        // ----- Pagination -----
+        // ========= PAGINATION (LINQ-to-Objects) =========
         var skip = (tableRequest.PageNumber - 1) * tableRequest.PageSize;
         query = query.Skip(skip).Take(tableRequest.PageSize);
 
-        var items = query.ToList();
-
         return new TableResult<T>
         {
-            Items = items,
-            TotalCount = totalResults // still pre-search / pre-paging count
+            Items = query.ToList(),
+            TotalCount = totalResults
         };
     }
+
 
     private static bool IsSimple(Type t)
     {
@@ -261,6 +176,21 @@ public static class Extensions
 
     private static bool TypeHasNoSearch(Type type) => Attribute.IsDefined(type, typeof(NoSearchAttribute));
 
+    
+    /// <summary>
+    /// This builds a search expression base for entity framework
+    /// It skips properties marked with [NoSearch]
+    /// It has a max depth to avoid too deep recursion
+    /// It handles string properties, simple types (int, DateTime, etc) and navigation properties
+    /// All objects that can be cast to a string are searched via ToString().ToLower().Contains(...)
+    /// </summary>
+    /// <param name="currentType"></param>
+    /// <param name="instance"></param>
+    /// <param name="depth"></param>
+    /// <param name="visited"></param>
+    /// <param name="maxObjectDepthsearch"></param>
+    /// <param name="searchLower"></param>
+    /// <returns></returns>
     private static Expression? BuildSearchExpression(Type currentType, Expression? instance, int depth, HashSet<Type> visited, int maxObjectDepthsearch, string searchLower)
     {
         if (depth > maxObjectDepthsearch)
@@ -275,7 +205,9 @@ public static class Extensions
 
         // If the type itself is marked [NoSearch], bail out
         if (TypeHasNoSearch(currentType))
+        {
             return null;
+        }
 
         // avoid type cycles (e.g. Car -> CarMaker -> Cars -> Car ...)
         if (!visited.Add(currentType))
@@ -285,6 +217,101 @@ public static class Extensions
 
         Expression? orExpr = null;
         var properties = currentType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        foreach (var prop in properties)
+        {
+            if (prop.GetIndexParameters().Length > 0)
+            {
+                continue;
+            }
+            if (HasNoSearch(prop))
+            {
+                continue;
+            }
+            var propType = prop.PropertyType;
+            var propExpr = Expression.Property(instance, prop);
+            var toLowerMethod = typeof(string).GetMethod(nameof(string.ToLower), Type.EmptyTypes);
+            var searchLowerConst = Expression.Constant(searchLower);
+            var containsMethod = typeof(string).GetMethod(nameof(string.Contains), new[] { typeof(string) });
+            if (propType == typeof(string))
+            {
+                var notNull = Expression.NotEqual(propExpr, Expression.Constant(null, typeof(string)));
+                var toLowerCall = Expression.Call(propExpr, toLowerMethod!);
+                var containsCall = Expression.Call(toLowerCall, containsMethod!, searchLowerConst);
+                var andExpr = Expression.AndAlso(notNull, containsCall);
+                orExpr = orExpr == null ? andExpr : Expression.OrElse(orExpr, andExpr);
+            }
+            else if (IsSimple(propType))
+            {
+                var toString = Expression.Call(propExpr, nameof(object.ToString), Type.EmptyTypes);
+                if (toString != null)
+                {
+                    var notNull = Expression.NotEqual(toString, Expression.Constant(null, typeof(string)));
+                    var toLower = Expression.Call(toString, toLowerMethod!);
+                    var contains = Expression.Call(toLower, containsMethod!, searchLowerConst);
+                    var andExpr = Expression.AndAlso(notNull, contains);
+
+                    orExpr = orExpr == null ? andExpr : Expression.OrElse(orExpr, andExpr);
+                }
+            }
+            else if (!IsSimple(propType) && !typeof(System.Collections.IEnumerable).IsAssignableFrom(propType))
+            {
+                var nested = BuildSearchExpression(propType, propExpr, depth + 1, visited, maxObjectDepthsearch, searchLower);
+                if (nested != null)
+                {
+                    orExpr = orExpr == null ? nested : Expression.OrElse(orExpr, nested);
+                }
+            }
+        }
+
+        visited.Remove(currentType);
+        return orExpr;
+    }
+
+    /// <summary>
+    /// This builds a search expression base on an IEnumerable type
+    /// It skips properties marked with [NoSearch]
+    /// It has a max depth to avoid too deep recursion
+    /// It handles string properties, simple types (int, DateTime, etc) and navigation properties
+    /// All objects that can be cast to a string are searched via ToString().ToLower().Contains(...)
+    /// </summary>
+    /// <param name="currentType"></param>
+    /// <param name="instance"></param>
+    /// <param name="depth"></param>
+    /// <param name="visited"></param>
+    /// <param name="maxObjectDepthsearch"></param>
+    /// <param name="searchLower"></param>
+    /// <returns></returns>
+    private static Expression? BuildSearchExpressionIEnumerable(Type currentType, Expression? instance, int depth, HashSet<Type> visited, int maxObjectDepthsearch, string searchLower)
+    {
+        if (depth > maxObjectDepthsearch)
+        {
+            return null;
+        }
+
+        if (instance == null)
+        {
+            return null;
+        }
+
+        // If the type itself is marked [NoSearch], bail out
+        if (TypeHasNoSearch(currentType))
+        {
+            return null;
+        }
+
+        // avoid type cycles (e.g. Car -> CarMaker -> Cars -> Car ...)
+        if (!visited.Add(currentType))
+        {
+            return null;
+        }
+
+        Expression? orExpr = null;
+        var properties = currentType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
+
+        var toLowerMethod = typeof(string).GetMethod(nameof(string.ToLower), Type.EmptyTypes)!;
+        var containsMethod = typeof(string).GetMethod(nameof(string.Contains), new[] { typeof(string) })!;
+        var searchLowerConst = Expression.Constant(searchLower);
+
         foreach (var prop in properties)
         {
             // skip indexers
@@ -301,48 +328,122 @@ public static class Extensions
 
             var propType = prop.PropertyType;
             var propExpr = Expression.Property(instance, prop);
-            var toLowerMethod = typeof(string).GetMethod(nameof(string.ToLower), Type.EmptyTypes);
-            var searchLowerConst = Expression.Constant(searchLower);
-
-            var containsMethod = typeof(string).GetMethod(nameof(string.Contains), new[] { typeof(string) });
 
             // Direct string property: x.Prop != null && x.Prop.ToLower().Contains(searchLower)
             if (propType == typeof(string))
             {
                 var notNull = Expression.NotEqual(propExpr, Expression.Constant(null, typeof(string)));
-                var toLowerCall = Expression.Call(propExpr, toLowerMethod!);
-                var containsCall = Expression.Call(toLowerCall, containsMethod!, searchLowerConst);
+                var toLowerCall = Expression.Call(propExpr, toLowerMethod);
+                var containsCall = Expression.Call(toLowerCall, containsMethod, searchLowerConst);
                 var andExpr = Expression.AndAlso(notNull, containsCall);
                 orExpr = orExpr == null ? andExpr : Expression.OrElse(orExpr, andExpr);
             }
-            // For simple types (int, DateTime, etc) it is converted to a string, then used toLower and then Contains
+            // For simple types (int, DateTime, etc) use ToString().ToLower().Contains(...)
             else if (IsSimple(propType))
             {
-                // Use the type's own ToString() (int.ToString, DateTime.ToString, etc.)
-                var toString = Expression.Call(propExpr, nameof(object.ToString), Type.EmptyTypes);
-                if (toString != null)
+                var toStringMethod = propType.GetMethod(nameof(object.ToString), Type.EmptyTypes);
+                if (toStringMethod != null)
                 {
-                    var notNull    = Expression.NotEqual(toString, Expression.Constant(null, typeof(string)));
-                    var toLower    = Expression.Call(toString, toLowerMethod!);
-                    var contains   = Expression.Call(toLower, containsMethod!, searchLowerConst);
-                    var andExpr    = Expression.AndAlso(notNull, contains);
+                    // propExpr.ToString()
+                    var toStringCall = Expression.Call(propExpr, toStringMethod);
 
+                    var notNull = Expression.NotEqual(
+                        toStringCall,
+                        Expression.Constant(null, typeof(string)));
+
+                    var toLower = Expression.Call(toStringCall, toLowerMethod);
+                    var contains = Expression.Call(toLower, containsMethod, searchLowerConst);
+
+                    var andExpr = Expression.AndAlso(notNull, contains);
                     orExpr = orExpr == null ? andExpr : Expression.OrElse(orExpr, andExpr);
                 }
             }
+            // ICollection / IEnumerable navigation properties
+            else if (typeof(System.Collections.IEnumerable).IsAssignableFrom(propType) && propType != typeof(string))
+            {
+                // Figure out the element type, e.g. ICollection<Car> -> Car
+                Type? elementType = null;
 
+                if (propType.IsArray)
+                {
+                    elementType = propType.GetElementType();
+                }
+                else if (propType.IsGenericType)
+                {
+                    elementType = propType.GetGenericArguments().FirstOrDefault();
+                }
+
+                if (elementType == null)
+                {
+                    continue;
+                }
+
+                // Respect [NoSearch] on the element type
+                if (TypeHasNoSearch(elementType))
+                {
+                    continue;
+                }
+
+                var elementParam = Expression.Parameter(elementType, "e");
+
+                Expression? elementBody = null;
+
+                // Collection of string: e != null && e.ToLower().Contains(searchLower)
+                if (elementType == typeof(string))
+                {
+                    var notNull = Expression.NotEqual(elementParam, Expression.Constant(null, typeof(string)));
+                    var elemToLower = Expression.Call(elementParam, toLowerMethod);
+                    var elemContains = Expression.Call(elemToLower, containsMethod, searchLowerConst);
+                    elementBody = Expression.AndAlso(notNull, elemContains);
+                }
+                // Collection of simple types: e.ToString().ToLower().Contains(searchLower)
+                else if (IsSimple(elementType))
+                {
+                    var toStringMethod = elementType.GetMethod(nameof(object.ToString), Type.EmptyTypes);
+                    if (toStringMethod == null)
+                    {
+                        continue;
+                    }
+
+                    var toStringCall = Expression.Call(elementParam, toStringMethod);
+                    var notNull = Expression.NotEqual(toStringCall, Expression.Constant(null, typeof(string)));
+                    var elemToLower = Expression.Call(toStringCall, toLowerMethod);
+                    var elemContains = Expression.Call(elemToLower, containsMethod, searchLowerConst);
+
+                    elementBody = Expression.AndAlso(notNull, elemContains);
+                }
+                // Collection of complex types: recurse
+                else
+                {
+                    elementBody = BuildSearchExpressionIEnumerable(elementType, elementParam, depth + 1, visited, maxObjectDepthsearch, searchLower);
+                }
+
+                if (elementBody != null)
+                {
+                    var anyLambda = Expression.Lambda(elementBody, elementParam);
+
+                    var anyMethod = typeof(Enumerable).GetMethods(BindingFlags.Public | BindingFlags.Static)
+                        .First(m =>
+                        {
+                            if (m.Name != "Any") return false;
+                            var args = m.GetParameters();
+                            return args.Length == 2;
+                        })
+                        .MakeGenericMethod(elementType);
+                    var anyCall = Expression.Call(anyMethod, propExpr, anyLambda);
+                    orExpr = orExpr == null ? anyCall : Expression.OrElse(orExpr, anyCall);
+                }
+            }
             // Recurse into reference-type navigation properties (e.g. CarMaker),
             // unless they are simple types or collections
-            else if (!IsSimple(propType) && !typeof(System.Collections.IEnumerable).IsAssignableFrom(propType))
+            else if (!IsSimple(propType))
             {
-                var nested = BuildSearchExpression(propType, propExpr, depth + 1, visited, maxObjectDepthsearch, searchLower);
+                var nested = BuildSearchExpressionIEnumerable(propType, propExpr, depth + 1, visited, maxObjectDepthsearch, searchLower);
                 if (nested != null)
                 {
                     orExpr = orExpr == null ? nested : Expression.OrElse(orExpr, nested);
                 }
             }
-            // NOTE: we deliberately skip IEnumerable navigation collections here to keep
-            // the generated expression EF-friendly and avoid complex Any() recursion.
         }
 
         visited.Remove(currentType);
@@ -350,6 +451,16 @@ public static class Extensions
     }
 
 
+    /// <summary>
+    /// Returns a TableRequest object from the HttpRequest query parameters, if parameters are not present, default values are used.
+    /// PageSize: 10
+    /// PageNumber: 1
+    /// SortDirection: null
+    /// SortColumn: null
+    /// SortColumnIndex: null
+    /// </summary>
+    /// <param name="request"></param>
+    /// <returns></returns>
     public static TableRequest GetTableRequest(this HttpRequest request)
     {
         return new TableRequest()
@@ -358,12 +469,8 @@ public static class Extensions
             PageSize = request.Query.ContainsKey("pageSize") ? int.Parse(request.Query["pageSize"]) : 10,
             Search = request.Query.ContainsKey("search") ? request.Query["search"].ToString() : null,
             SortColumn = request.Query.ContainsKey("sortColumn") ? request.Query["sortColumn"].ToString() : null,
-            SortColumnIndex = request.Query.ContainsKey("sortColumnIndex")
-                ? int.Parse(request.Query["sortColumnIndex"])
-                : null,
-            SortDirection = request.Query.ContainsKey("sortDirection")
-                ? request.Query["sortDirection"].ToString()
-                : null,
+            SortColumnIndex = request.Query.ContainsKey("sortColumnIndex") ? int.Parse(request.Query["sortColumnIndex"]) : null,
+            SortDirection = request.Query.ContainsKey("sortDirection") ? request.Query["sortDirection"].ToString() : null,
         };
     }
 }

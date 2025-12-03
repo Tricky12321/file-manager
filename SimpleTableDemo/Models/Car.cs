@@ -12,6 +12,14 @@ public class Car
     public CarMaker CarMaker { get; set; }
     public int Year { get; set; }
     public string Color { get; set; }
+    public virtual IEnumerable<Feature>? Features { get; set; }
+}
+
+public class Feature
+{
+    public int FeatureId { get; set; }
+    public int CarId { get; set; }
+    public string Name { get; set; }
 }
 
 public class CarMaker

@@ -6,7 +6,7 @@ namespace FileManager;
 
 public class DatabaseService : ContextService
 {
-    public IQueryable<Car> Cars => Context.Cars.Include(x => x.CarMaker);
+    public IQueryable<Car> Cars => Context.Cars;
 
     public static void SeedDatabase()
     {
@@ -20,7 +20,6 @@ public class DatabaseService : ContextService
             return;
 
         Console.WriteLine("Seeding database...");
-
         var carMakers = new Dictionary<int, CarMaker>
         {
             { 1, new CarMaker { CarMakerId = 1, Brand = "Toyota", HomeCountry = "Japan" } },
@@ -44,7 +43,7 @@ public class DatabaseService : ContextService
         var cars = new[]
         {
             // --- Toyota ---
-            new Car { CarMakerId = 1, CarMaker = carMakers[1], Model = "Camry", Year = 2020, Color = "Blue" },
+            new Car { CarMakerId = 1, CarMaker = carMakers[1], Model = "Camry", Year = 2020, Color = "Blue"},
             new Car { CarMakerId = 1, CarMaker = carMakers[1], Model = "Corolla", Year = 2021, Color = "White" },
             new Car { CarMakerId = 1, CarMaker = carMakers[1], Model = "RAV4", Year = 2019, Color = "Gray" },
             new Car { CarMakerId = 1, CarMaker = carMakers[1], Model = "Highlander", Year = 2022, Color = "Black" },
@@ -159,6 +158,34 @@ public class DatabaseService : ContextService
         context.CarMakers.AddRange(carMakers.Select(x => x.Value).ToList());
         context.SaveChanges();
         context.Cars.AddRange(cars);
+        // Now add random features to the cars
+        var featureList = new List<string>
+        {
+            "Sunroof", "Leather Seats", "Bluetooth", "Backup Camera", "Navigation System",
+            "Heated Seats", "Alloy Wheels", "Remote Start", "Blind Spot Monitor", "Apple CarPlay",
+            "Android Auto", "Keyless Entry", "Fog Lights", "Roof Rack", "Third Row Seating",
+            "Premium Sound System", "Adaptive Cruise Control", "Lane Departure Warning", "Parking Sensors", "Turbocharged Engine",
+            "Electric Windows", "Automatic Climate Control", "Power Seats", "LED Headlights", "Towing Package",
+            "Wireless Charging", "Heads-Up Display", "Rain-Sensing Wipers", "Voice Recognition", "Collision Mitigation System"
+        };
+        context.SaveChanges();
+        var newFeatures = new List<Feature>();
+        foreach (Car car in context.Cars)
+        {
+            // Select 1-5 random features
+            var random = new Random();
+            int featureCount = random.Next(2, 8);
+            var selectedFeatures = featureList.OrderBy(x => random.Next()).Take(featureCount).ToList();
+            foreach (var featureName in selectedFeatures)
+            {
+                newFeatures.Add(new Feature()
+                {
+                    CarId = car.CarId,
+                    Name = featureName,
+                });
+            }
+        }
+        context.AddRange(newFeatures);
         context.SaveChanges();
     }
 }

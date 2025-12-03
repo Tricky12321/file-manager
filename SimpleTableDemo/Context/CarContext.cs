@@ -6,6 +6,7 @@ public class CarsContext : DbContext
 {
     public DbSet<Car> Cars { get; set; }
     public DbSet<CarMaker> CarMakers { get; set; }
+    public DbSet<Feature> Features { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
@@ -46,13 +47,23 @@ public class CarsContext : DbContext
 
             // Car → CarMaker (many-to-one)
             entity.HasOne(c => c.CarMaker)
-                .WithMany()              // (optional: .WithMany(m => m.Cars))
+                .WithMany()
                 .HasForeignKey(c => c.CarMakerId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // OPTIONAL: If you want seeding here:
-        // modelBuilder.Entity<CarMaker>().HasData(...);
-        // modelBuilder.Entity<Car>().HasData(...);
+        modelBuilder.Entity<Feature>(entity =>
+        {
+            entity.HasKey(x => x.FeatureId);
+            entity.Property(x => x.FeatureId).IsRequired();
+            entity.Property(x => x.CarId).IsRequired();
+            entity.Property(x => x.Name).IsRequired();
+            entity.HasOne<Car>()
+                .WithMany(x => x.Features)
+                .HasForeignKey(c => c.CarId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
     }
+
 }
