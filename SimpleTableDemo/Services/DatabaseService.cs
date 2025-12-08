@@ -6,7 +6,8 @@ namespace FileManager;
 
 public class DatabaseService : ContextService
 {
-    public IQueryable<Car> Cars => Context.Cars;
+    public IQueryable<Car> Cars => Context.Cars.Include(x => x.CarMaker);
+    
 
     public static void SeedDatabase()
     {

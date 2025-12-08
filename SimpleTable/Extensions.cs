@@ -1,15 +1,17 @@
+using System.Collections;
 using System.Linq.Expressions;
 using System.Reflection;
 using Microsoft.AspNetCore.Http;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using SimpleTable.Models;
 
 namespace SimpleTable;
 
 public static class Extensions
 {
-    public static TableResult<T> ToTableResponse<T>(this IQueryable<T> query, TableRequest tableRequest = null, int maxObjectDepthsearch = 3)
+    public static TableResult<T> ToTableResponse<T>(this IQueryable<T> query, DbContext db, TableRequest? tableRequest = null, int maxObjectDepthsearch = 3, bool searchOnlyEfMapped = true)
     {
-        // Count BEFORE filtering/paging (same behavior as your original)
         var totalResults = query.Count();
 
         if (tableRequest == null)
@@ -18,71 +20,66 @@ public static class Extensions
             {
                 PageNumber = 1,
                 PageSize = totalResults,
-                Search = string.Empty,
+                Search = "",
                 SortColumn = null,
                 SortDirection = null
             };
         }
 
-        // ========= SEARCH (recursive, string-only, EF-translatable, [NoSearch]-aware) =========
+        // ========== SEARCH ==========
         if (!string.IsNullOrWhiteSpace(tableRequest.Search))
         {
             var parameter = Expression.Parameter(typeof(T), "x");
-            var searchLower = tableRequest.Search.ToLower();
+            var search = tableRequest.Search.ToLower();
 
-            var visitedTypes = new HashSet<Type>();
-            var body = BuildSearchExpressionIEnumerable(typeof(T), parameter, 0, visitedTypes, maxObjectDepthsearch, searchLower);
+            var visited = new HashSet<Type>();
+
+            Expression? body;
+
+            if (searchOnlyEfMapped)
+            {
+                var included = searchOnlyEfMapped ? GetIncludedNavigations(query) : null;
+                // Original behavior: scan ALL public CLR properties
+                body = BuildEfSearchExpression(db.Model.FindEntityType(typeof(T)), parameter, 0, visited, maxObjectDepthsearch, search, db.Model, included);
+                // Only scan EF properties
+            }
+            else
+            {
+                body = BuildEfSearchExpression(db.Model.FindEntityType(typeof(T)), parameter, 0, visited, maxObjectDepthsearch, search, db.Model);
+            }
 
             if (body != null)
             {
                 var lambda = Expression.Lambda<Func<T, bool>>(body, parameter);
-                query = query.Where(lambda); // stays IQueryable => executed in DB
+                query = query.Where(lambda);
             }
         }
 
-        // ========= SORTING (EF-side) =========
         if (!string.IsNullOrWhiteSpace(tableRequest.SortColumn))
         {
-            var parameter = Expression.Parameter(typeof(T), "x");
-            var prop = typeof(T).GetProperty(
-                tableRequest.SortColumn,
-                BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
-
+            var prop = typeof(T).GetProperty(tableRequest.SortColumn, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
             if (prop != null)
             {
-                var propertyAccess = Expression.Property(parameter, prop);
-                var orderByExp = Expression.Lambda(propertyAccess, parameter);
-
-                var methodName = tableRequest.SortDirection?.Equals("desc", StringComparison.OrdinalIgnoreCase) == true
-                    ? "OrderByDescending"
-                    : "OrderBy";
-
-                var resultExp = Expression.Call(
-                    typeof(Queryable),
-                    methodName,
-                    new[] { typeof(T), prop.PropertyType },
-                    query.Expression,
-                    Expression.Quote(orderByExp));
-
+                var parameter = Expression.Parameter(typeof(T), "x");
+                var methodName = tableRequest.SortDirection?.Equals("desc", StringComparison.OrdinalIgnoreCase) == true ? "OrderByDescending" : "OrderBy";
+                var resultExp = Expression.Call(typeof(Queryable), methodName, new[] { typeof(T), prop.PropertyType }, query.Expression,
+                    Expression.Quote(Expression.Lambda(Expression.Property(parameter, prop), parameter)));
                 query = query.Provider.CreateQuery<T>(resultExp);
             }
         }
 
-        // ========= PAGINATION (EF-side) =========
+        // ========== PAGINATION ==========
         var skip = (tableRequest.PageNumber - 1) * tableRequest.PageSize;
         query = query.Skip(skip).Take(tableRequest.PageSize);
 
-        // Materialize once, at the end
-        var items = query.ToList();
-
         return new TableResult<T>
         {
-            Items = items,
-            TotalCount = totalResults // pre-filter count; change if you want post-search count instead
+            Items = query.ToList(),
+            TotalCount = totalResults
         };
     }
 
-    public static TableResult<T> ToTableResponse<T>(this IEnumerable<T> source, TableRequest tableRequest = null, int maxObjectDepthsearch = 3)
+    public static TableResult<T> ToTableResponse<T>(this IEnumerable<T> source, TableRequest? tableRequest = null, int maxObjectDepthsearch = 3)
     {
         // materialize immediately (IEnumerable is pull-based)
         var query = source;
@@ -108,13 +105,7 @@ public static class Extensions
             var searchLower = tableRequest.Search.ToLower();
 
             var visitedTypes = new HashSet<Type>();
-            var body = BuildSearchExpressionIEnumerable(
-                typeof(T),
-                parameter,
-                0,
-                visitedTypes,
-                maxObjectDepthsearch,
-                searchLower);
+            var body = BuildSearchExpressionIEnumerable(typeof(T), parameter, 0, visitedTypes, maxObjectDepthsearch, searchLower);
 
             if (body != null)
             {
@@ -126,17 +117,12 @@ public static class Extensions
         // ========= SORTING (LINQ-to-Objects) =========
         if (!string.IsNullOrWhiteSpace(tableRequest.SortColumn))
         {
-            var prop = typeof(T).GetProperty(
-                tableRequest.SortColumn,
-                BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+            var prop = typeof(T).GetProperty(tableRequest.SortColumn, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
 
             if (prop != null)
             {
                 Func<T, object> keySelector = x => prop.GetValue(x);
-
-                query = (tableRequest.SortDirection?.Equals("desc", StringComparison.OrdinalIgnoreCase) == true)
-                    ? query.OrderByDescending(keySelector)
-                    : query.OrderBy(keySelector);
+                query = (tableRequest.SortDirection?.Equals("desc", StringComparison.OrdinalIgnoreCase) == true) ? query.OrderByDescending(keySelector) : query.OrderBy(keySelector);
             }
         }
 
@@ -154,118 +140,16 @@ public static class Extensions
 
     private static bool IsSimple(Type t)
     {
-        return t.IsPrimitive ||
-               t.IsEnum ||
-               t == typeof(decimal) ||
-               t == typeof(float) ||
-               t == typeof(int) ||
-               t == typeof(long) ||
-               t == typeof(ulong) ||
-               t == typeof(Int16) ||
-               t == typeof(Int32) ||
-               t == typeof(Int64) ||
-               t == typeof(double) ||
-               t == typeof(bool) ||
-               t == typeof(DateTime) ||
-               t == typeof(DateTimeOffset) ||
-               t == typeof(Guid) ||
-               t == typeof(TimeSpan);
+        return t.IsPrimitive || t.IsEnum || t == typeof(decimal) || t == typeof(float) || t == typeof(int) ||
+               t == typeof(long) || t == typeof(ulong) || t == typeof(Int16) || t == typeof(Int32) ||
+               t == typeof(Int64) || t == typeof(double) || t == typeof(bool) || t == typeof(DateTime) ||
+               t == typeof(DateTimeOffset) || t == typeof(Guid) || t == typeof(TimeSpan);
     }
 
     private static bool HasNoSearch(MemberInfo mi) => Attribute.IsDefined(mi, typeof(NoSearchAttribute));
 
     private static bool TypeHasNoSearch(Type type) => Attribute.IsDefined(type, typeof(NoSearchAttribute));
 
-    
-    /// <summary>
-    /// This builds a search expression base for entity framework
-    /// It skips properties marked with [NoSearch]
-    /// It has a max depth to avoid too deep recursion
-    /// It handles string properties, simple types (int, DateTime, etc) and navigation properties
-    /// All objects that can be cast to a string are searched via ToString().ToLower().Contains(...)
-    /// </summary>
-    /// <param name="currentType"></param>
-    /// <param name="instance"></param>
-    /// <param name="depth"></param>
-    /// <param name="visited"></param>
-    /// <param name="maxObjectDepthsearch"></param>
-    /// <param name="searchLower"></param>
-    /// <returns></returns>
-    private static Expression? BuildSearchExpression(Type currentType, Expression? instance, int depth, HashSet<Type> visited, int maxObjectDepthsearch, string searchLower)
-    {
-        if (depth > maxObjectDepthsearch)
-        {
-            return null;
-        }
-
-        if (instance == null)
-        {
-            return null;
-        }
-
-        // If the type itself is marked [NoSearch], bail out
-        if (TypeHasNoSearch(currentType))
-        {
-            return null;
-        }
-
-        // avoid type cycles (e.g. Car -> CarMaker -> Cars -> Car ...)
-        if (!visited.Add(currentType))
-        {
-            return null;
-        }
-
-        Expression? orExpr = null;
-        var properties = currentType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
-        foreach (var prop in properties)
-        {
-            if (prop.GetIndexParameters().Length > 0)
-            {
-                continue;
-            }
-            if (HasNoSearch(prop))
-            {
-                continue;
-            }
-            var propType = prop.PropertyType;
-            var propExpr = Expression.Property(instance, prop);
-            var toLowerMethod = typeof(string).GetMethod(nameof(string.ToLower), Type.EmptyTypes);
-            var searchLowerConst = Expression.Constant(searchLower);
-            var containsMethod = typeof(string).GetMethod(nameof(string.Contains), new[] { typeof(string) });
-            if (propType == typeof(string))
-            {
-                var notNull = Expression.NotEqual(propExpr, Expression.Constant(null, typeof(string)));
-                var toLowerCall = Expression.Call(propExpr, toLowerMethod!);
-                var containsCall = Expression.Call(toLowerCall, containsMethod!, searchLowerConst);
-                var andExpr = Expression.AndAlso(notNull, containsCall);
-                orExpr = orExpr == null ? andExpr : Expression.OrElse(orExpr, andExpr);
-            }
-            else if (IsSimple(propType))
-            {
-                var toString = Expression.Call(propExpr, nameof(object.ToString), Type.EmptyTypes);
-                if (toString != null)
-                {
-                    var notNull = Expression.NotEqual(toString, Expression.Constant(null, typeof(string)));
-                    var toLower = Expression.Call(toString, toLowerMethod!);
-                    var contains = Expression.Call(toLower, containsMethod!, searchLowerConst);
-                    var andExpr = Expression.AndAlso(notNull, contains);
-
-                    orExpr = orExpr == null ? andExpr : Expression.OrElse(orExpr, andExpr);
-                }
-            }
-            else if (!IsSimple(propType) && !typeof(System.Collections.IEnumerable).IsAssignableFrom(propType))
-            {
-                var nested = BuildSearchExpression(propType, propExpr, depth + 1, visited, maxObjectDepthsearch, searchLower);
-                if (nested != null)
-                {
-                    orExpr = orExpr == null ? nested : Expression.OrElse(orExpr, nested);
-                }
-            }
-        }
-
-        visited.Remove(currentType);
-        return orExpr;
-    }
 
     /// <summary>
     /// This builds a search expression base on an IEnumerable type
@@ -344,26 +228,17 @@ public static class Extensions
                 var toStringMethod = propType.GetMethod(nameof(object.ToString), Type.EmptyTypes);
                 if (toStringMethod != null)
                 {
-                    // propExpr.ToString()
                     var toStringCall = Expression.Call(propExpr, toStringMethod);
-
-                    var notNull = Expression.NotEqual(
-                        toStringCall,
-                        Expression.Constant(null, typeof(string)));
-
+                    var notNull = Expression.NotEqual(toStringCall, Expression.Constant(null, typeof(string)));
                     var toLower = Expression.Call(toStringCall, toLowerMethod);
                     var contains = Expression.Call(toLower, containsMethod, searchLowerConst);
-
                     var andExpr = Expression.AndAlso(notNull, contains);
                     orExpr = orExpr == null ? andExpr : Expression.OrElse(orExpr, andExpr);
                 }
             }
-            // ICollection / IEnumerable navigation properties
-            else if (typeof(System.Collections.IEnumerable).IsAssignableFrom(propType) && propType != typeof(string))
+            else if (typeof(IEnumerable).IsAssignableFrom(propType) && propType != typeof(string))
             {
-                // Figure out the element type, e.g. ICollection<Car> -> Car
                 Type? elementType = null;
-
                 if (propType.IsArray)
                 {
                     elementType = propType.GetElementType();
@@ -385,9 +260,7 @@ public static class Extensions
                 }
 
                 var elementParam = Expression.Parameter(elementType, "e");
-
                 Expression? elementBody = null;
-
                 // Collection of string: e != null && e.ToLower().Contains(searchLower)
                 if (elementType == typeof(string))
                 {
@@ -409,7 +282,6 @@ public static class Extensions
                     var notNull = Expression.NotEqual(toStringCall, Expression.Constant(null, typeof(string)));
                     var elemToLower = Expression.Call(toStringCall, toLowerMethod);
                     var elemContains = Expression.Call(elemToLower, containsMethod, searchLowerConst);
-
                     elementBody = Expression.AndAlso(notNull, elemContains);
                 }
                 // Collection of complex types: recurse
@@ -421,7 +293,6 @@ public static class Extensions
                 if (elementBody != null)
                 {
                     var anyLambda = Expression.Lambda(elementBody, elementParam);
-
                     var anyMethod = typeof(Enumerable).GetMethods(BindingFlags.Public | BindingFlags.Static)
                         .First(m =>
                         {
@@ -448,6 +319,121 @@ public static class Extensions
 
         visited.Remove(currentType);
         return orExpr;
+    }
+
+
+    private static Expression? BuildEfSearchExpression(IEntityType? entityType, Expression parameter, int depth,
+        HashSet<Type> visited, int maxDepth, string searchLower, IModel efModel, HashSet<string>? includedNavigations = null)
+    {
+        if (depth > maxDepth)
+        {
+            return null;
+        }
+
+        if (!visited.Add(entityType.ClrType))
+        {
+            return null;
+        }
+
+        Expression? combined = null;
+        // Scalar properties
+        foreach (var prop in entityType.GetProperties())
+        {
+            if (prop.ClrType == typeof(string))
+            {
+                var toLower = Expression.Call(Expression.Property(parameter, prop.PropertyInfo), typeof(string).GetMethod("ToLower", Type.EmptyTypes));
+                var contains = Expression.Call(toLower, typeof(string).GetMethod("Contains", new[] { typeof(string) }), Expression.Constant(searchLower));
+                combined = combined == null ? contains : Expression.OrElse(combined, contains);
+            }
+        }
+
+        // Navigation properties
+        // Navigation properties (reference + collections)
+        foreach (var nav in entityType.GetNavigations())
+        {
+            if (includedNavigations != null && !includedNavigations.Contains(nav.Name))
+            {
+                continue;
+            }
+
+            var navEntityType = efModel.FindEntityType(nav.TargetEntityType.ClrType);
+            if (navEntityType == null)
+            {
+                continue;
+            }
+
+            // x.Nav
+            Expression navAccess = Expression.Property(parameter, nav.PropertyInfo);
+
+            // If navigation is a collection => use Any()
+            if (typeof(IEnumerable).IsAssignableFrom(nav.PropertyInfo.PropertyType) && nav.PropertyInfo.PropertyType != typeof(string))
+            {
+                // Determine element type: for ICollection<T> it's the generic argument
+                var itemParam = Expression.Parameter(navEntityType.ClrType, "f");
+                // recursive search inside collection item
+                var innerSearch = BuildEfSearchExpression(navEntityType, itemParam, depth + 1, visited, maxDepth, searchLower, efModel);
+                if (innerSearch != null)
+                {
+                    var lambda = Expression.Lambda(innerSearch, itemParam);
+                    var anyCall = Expression.Call(typeof(Enumerable), "Any", new[] { navEntityType.ClrType }, navAccess, lambda);
+                    combined = combined == null ? anyCall : Expression.OrElse(combined, anyCall);
+                }
+            }
+            else
+            {
+                // normal reference navigation
+                var inner = BuildEfSearchExpression(navEntityType, navAccess, depth + 1, visited, maxDepth, searchLower, efModel);
+                if (inner != null)
+                {
+                    var safe = Expression.AndAlso(Expression.NotEqual(navAccess, Expression.Constant(null)), inner);
+                    combined = combined == null ? safe : Expression.OrElse(combined, safe);
+                }
+            }
+        }
+
+
+        return combined;
+    }
+
+
+    public static HashSet<string> GetIncludedNavigations(IQueryable query)
+    {
+        var visitor = new IncludeVisitor();
+        visitor.Visit(query.Expression);
+        return visitor.Includes;
+    }
+
+    class IncludeVisitor : ExpressionVisitor
+    {
+        public HashSet<string> Includes { get; } = new();
+
+        protected override Expression VisitMethodCall(MethodCallExpression node)
+        {
+            if (node.Method.Name == "Include" || node.Method.Name == "ThenInclude")
+            {
+                var lambda = (LambdaExpression)((UnaryExpression)node.Arguments[1]).Operand;
+
+                // Extract property path "Features", "Owner.Address", etc.
+                string path = ExtractPropertyPath(lambda.Body);
+                Includes.Add(path);
+            }
+
+            return base.VisitMethodCall(node);
+        }
+
+        private static string ExtractPropertyPath(Expression exp)
+        {
+            var parts = new List<string>();
+
+            while (exp is MemberExpression memberExp)
+            {
+                parts.Add(memberExp.Member.Name);
+                exp = memberExp.Expression;
+            }
+
+            parts.Reverse();
+            return string.Join(".", parts);
+        }
     }
 
 
