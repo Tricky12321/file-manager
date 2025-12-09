@@ -1,4 +1,4 @@
-<h1>File dashboard ({{ !this.folderMode ? this.filePath : this.folderPath }})</h1>
+<h1>{{ this.folderMode ? "Folder" : "File" }} dashboard ({{ !this.folderMode ? this.filePath : this.folderPath }})</h1>
 @if (this.loading) {
   <i class="fa fa-spinner fa-spin fa-3x fa-fw"></i>
 }
@@ -65,20 +65,15 @@
   </div>
 </div>
 @if (this.folderMode == false) {
-  <simple-table
-    [serverSide]="true"
-    [url]="this.buildUrl()"
-    [template]="rowTemplateServer"
-    [loadingText]="'Henter filer...'"
-  >
+  <simple-table [serverSide]="true" [url]="this.buildUrl()" [template]="rowTemplateServer" [loadingText]="'Fetching files...'">
     <thead>
     <tr>
       <th></th>
-      <th data-column-key="Path" >Path</th>
-      <th data-column-key="Size" >Size</th>
-      <th data-column-key="IsHardlink" >Hardlink</th>
-      <th data-column-key="InQbit" >In Qbit</th>
-      <th data-column-key="FolderInQbit" >Folder in Qbit</th>
+      <th data-column-key="Path">Path</th>
+      <th data-column-key="Size">Size</th>
+      <th data-column-key="IsHardlink">Hardlink</th>
+      <th data-column-key="InQbit">In Qbit</th>
+      <th data-column-key="FolderInQbit">Folder in Qbit</th>
       <th data-column-key="HashDuplicate">Hash Duplicate</th>
       <th data-column-key="Hash">Hash</th>
       <th></th>
@@ -111,7 +106,7 @@
         <i class="fa" [class.text-success]="!fileInfo.hashDuplicate" [class.fa-times]="!fileInfo.hashDuplicate"
            [class.text-danger]="fileInfo.hashDuplicate" [class.fa-check]="fileInfo.hashDuplicate"></i>
       </td>
-      <td [attr.data-sort]="fileInfo.partialHash">{{fileInfo.partialHash}}</td>
+      <td [attr.data-sort]="fileInfo.partialHash">{{ fileInfo.partialHash }}</td>
       <td>
         <button class="btn btn-danger" (click)="deleteFile(fileInfo)">Delete</button>
         <button class="btn btn-warning" (click)="openFolder(fileInfo)">Open Folder</button>
@@ -119,24 +114,17 @@
     </tr>
   </ng-template>
 } @else if (this.folderMode) {
-  @if (this.folderMode == false) {
-    <simple-table
-      [serverSide]="true"
-      [url]="this.buildUrl()"
-      [template]="rowTemplateServer"
-      [loadingText]="'Henter filer...'"
-    >
+    <simple-table [serverSide]="true" [url]="this.buildUrl()" [template]="rowTemplateServer" [loadingText]="'Fetching folders...'">
       <thead>
       <tr>
         <th></th>
-        <th data-column-key="Path" >Path</th>
-        <th data-column-key="Size" >Size</th>
-        <th data-column-key="FolderInQbit" >Folder in Qbit</th>
+        <th data-column-key="Path">Path</th>
+        <th data-column-key="Size">Size</th>
+        <th data-column-key="FolderInQbit">Folder in Qbit</th>
         <th></th>
       </tr>
       </thead>
     </simple-table>
-
     <ng-template #rowTemplateServer let-fileInfo="row">
       <tr>
         <td>
@@ -150,12 +138,10 @@
           <i class="fa" [class.text-danger]="!fileInfo.folderInQbit" [class.fa-times]="!fileInfo.folderInQbit"
              [class.text-success]="fileInfo.folderInQbit" [class.fa-check]="fileInfo.folderInQbit"></i>
         </td>
-        <td [attr.data-sort]="fileInfo.partialHash">{{fileInfo.partialHash}}</td>
+        <td [attr.data-sort]="fileInfo.partialHash">{{ fileInfo.partialHash }}</td>
         <td>
           <button class="btn btn-warning" (click)="openFolder(fileInfo)">Open Folder</button>
         </td>
       </tr>
     </ng-template>
-  }
-
 }

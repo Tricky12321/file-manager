@@ -69,8 +69,7 @@ public class FileSystemService
         return output;
     }
 
-    public List<DirectoryInfo> GetDirectoriesInDirectory(string directoryPath, bool? folderInQbit = null,
-        bool clearCache = false)
+    public List<DirectoryInfo> GetDirectoriesInDirectory(string directoryPath, bool? folderInQbit = null, bool clearCache = false)
     {
         List<FileInfo> files = GetFilesInDirectory(directoryPath, null, null, folderInQbit, null, clearCache);
         var grouped = files.GroupBy(f => f.FolderPath);
@@ -89,8 +88,7 @@ public class FileSystemService
         return folders;
     }
 
-    public List<FileInfo> GetFilesInDirectory(string directoryPath, bool? hardlink = null, bool? inQbit = null,
-        bool? folderInQbit = null, bool? hashDuplicate = null, bool clearCache = false)
+    public List<FileInfo> GetFilesInDirectory(string directoryPath, bool? hardlink = null, bool? inQbit = null, bool? folderInQbit = null, bool? hashDuplicate = null, bool clearCache = false)
     {
         var qbitFiles = _qbittorrentService.GetTorrentList(clearCache).GetAwaiter().GetResult();
         var qbitAllFiles = _qbittorrentService.GetTorrentFiles(qbitFiles, clearCache).GetAwaiter().GetResult();

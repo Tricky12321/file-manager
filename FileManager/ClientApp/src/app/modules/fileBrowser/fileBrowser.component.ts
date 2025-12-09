@@ -47,7 +47,7 @@ export class FileBrowserComponent implements OnInit {
     this.hashDuplicate = localStorage.getItem("hashDuplicate") == "null" ? true : (localStorage.getItem("hashDuplicate") == "true");
   }
 
-  buildUrl() : string {
+  buildUrl(): string {
     if (this.filePath != "") {
       let hardlink = this.hardlinkFilter?.toString() !== "null" ? this.hardlinkFilter : null;
       let inQbit = this.inQbitFilter?.toString() !== "null" ? this.inQbitFilter : null;
@@ -148,6 +148,7 @@ export class FileBrowserComponent implements OnInit {
       return [];
     }
   }
+
   deleteSelectedFiles() {
     const filesToDelete = this.getFiles()!.map(x => x.path);
     if (filesToDelete.length == 0) {
@@ -202,7 +203,12 @@ export class FileBrowserComponent implements OnInit {
   }
 
   openFolder(fileInfo: FileInfo) {
-    var folderPath = fileInfo.folderPath;
+    var folderPath: string;
+    if (this.folderMode) {
+      folderPath = fileInfo.path;
+    } else {
+      folderPath = fileInfo.folderPath;
+    }
     this.router.navigate(['/browse'], {queryParams: {path: folderPath}})
   }
 }
