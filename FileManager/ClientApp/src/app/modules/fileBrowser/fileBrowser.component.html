@@ -49,12 +49,15 @@
         <div class="col-4">
           <div class="form-group">
             <label for="needConfirm">Need Confirmation before delete</label>
-            <input type="checkbox" id="needConfirm" class="form-check-input" [(ngModel)]="this.needConfirm"
-                   (change)="paramsChanged()"/>
+            <input type="checkbox" id="needConfirm" class="form-check-input" [(ngModel)]="this.needConfirm" (change)="paramsChanged()"/>
           </div>
           <div>
-            <button class="btn btn-primary ms-2" (click)="deleteSelectedFiles()">Delete selected files</button>
-            <button class="btn btn-secondary ms-2" (click)="toggleSelectedFiles()">Toggle selected files</button>
+            @if (!this.folderMode) {
+              <button class="btn btn-primary ms-2" (click)="deleteSelectedFiles()">Delete selected files</button>
+            } @else if (this.folderMode) {
+              <button class="btn btn-primary ms-2" (click)="deleteSelectedFolders()">Delete selected folder</button>
+            }
+            <button class="btn btn-secondary ms-2" (click)="toggleSelectedFiles()">Toggle selected {{ this.folderMode ? "folders" : "files" }}</button>
           </div>
         </div>
       </div>
@@ -64,7 +67,7 @@
     <button class="btn btn-secondary mt-4" (click)="this.load(true)">Refresh data</button>
   </div>
 </div>
-@if (this.folderMode == false) {
+@if (!this.folderMode) {
   <simple-table [serverSide]="true" [url]="this.buildUrl()" [template]="rowTemplateServer" [loadingText]="'Fetching files...'">
     <thead>
     <tr>
@@ -80,7 +83,6 @@
     </tr>
     </thead>
   </simple-table>
-
   <ng-template #rowTemplateServer let-fileInfo="row">
     <tr>
       <td>
@@ -108,40 +110,41 @@
       </td>
       <td [attr.data-sort]="fileInfo.partialHash">{{ fileInfo.partialHash }}</td>
       <td>
-        <button class="btn btn-danger" (click)="deleteFile(fileInfo)">Delete</button>
-        <button class="btn btn-warning" (click)="openFolder(fileInfo)">Open Folder</button>
+        <button class="btn btn-sm btn-danger me-2" (click)="deleteFile(fileInfo)">Delete</button>
+        <button class="btn btn-sm btn-warning" (click)="openFolder(fileInfo)">Open Folder</button>
       </td>
     </tr>
   </ng-template>
 } @else if (this.folderMode) {
-    <simple-table [serverSide]="true" [url]="this.buildUrl()" [template]="rowTemplateServer" [loadingText]="'Fetching folders...'">
-      <thead>
-      <tr>
-        <th></th>
-        <th data-column-key="Path">Path</th>
-        <th data-column-key="Size">Size</th>
-        <th data-column-key="FolderInQbit">Folder in Qbit</th>
-        <th></th>
-      </tr>
-      </thead>
-    </simple-table>
-    <ng-template #rowTemplateServer let-fileInfo="row">
-      <tr>
-        <td>
-          <input type="checkbox" [(ngModel)]="fileInfo.selected"/>
-        </td>
-        <td>{{ fileInfo.path }}</td>
-        <td
-          [attr.data-sort]="fileInfo.size">{{ fileInfo.sizeGb > 1 ? fileInfo.sizeGb + " GB" : fileInfo.sizeMb + " MB" }}
-        </td>
-        <td>
-          <i class="fa" [class.text-danger]="!fileInfo.folderInQbit" [class.fa-times]="!fileInfo.folderInQbit"
-             [class.text-success]="fileInfo.folderInQbit" [class.fa-check]="fileInfo.folderInQbit"></i>
-        </td>
-        <td [attr.data-sort]="fileInfo.partialHash">{{ fileInfo.partialHash }}</td>
-        <td>
-          <button class="btn btn-warning" (click)="openFolder(fileInfo)">Open Folder</button>
-        </td>
-      </tr>
-    </ng-template>
+  <simple-table [serverSide]="true" [url]="this.buildUrl()" [template]="rowTemplateServer" [loadingText]="'Fetching folders...'">
+    <thead>
+    <tr>
+      <th></th>
+      <th data-column-key="Path">Path</th>
+      <th data-column-key="Size">Size</th>
+      <th data-column-key="FolderInQbit">Folder in Qbit</th>
+      <th></th>
+    </tr>
+    </thead>
+  </simple-table>
+  <ng-template #rowTemplateServer let-fileInfo="row">
+    <tr>
+      <td>
+        <input type="checkbox" [(ngModel)]="fileInfo.selected"/>
+      </td>
+      <td>{{ fileInfo.path }}</td>
+      <td
+        [attr.data-sort]="fileInfo.size">{{ fileInfo.sizeGb > 1 ? fileInfo.sizeGb + " GB" : fileInfo.sizeMb + " MB" }}
+      </td>
+      <td>
+        <i class="fa" [class.text-danger]="!fileInfo.folderInQbit" [class.fa-times]="!fileInfo.folderInQbit"
+           [class.text-success]="fileInfo.folderInQbit" [class.fa-check]="fileInfo.folderInQbit"></i>
+      </td>
+      <td [attr.data-sort]="fileInfo.partialHash">{{ fileInfo.partialHash }}</td>
+      <td>
+        <button class="btn btn-sm btn-warning me-2" (click)="openFolder(fileInfo)">Open Folder</button>
+        <button class="btn btn-sm btn-danger" (click)="deleteFolder(fileInfo)">Delete Folder</button>
+      </td>
+    </tr>
+  </ng-template>
 }

@@ -12,6 +12,10 @@ const routes: Routes = [
   {path: 'files/film', component: FileBrowserComponent},
   {path: 'directories/tv', component: FileBrowserComponent},
   {path: 'directories/film', component: FileBrowserComponent},
+  {path: 'directories/empty/film', component: FileBrowserComponent},
+  {path: 'directories/small/film', component: FileBrowserComponent},
+  {path: 'directories/empty/tv', component: FileBrowserComponent},
+  {path: 'directories/small/tv', component: FileBrowserComponent},
   {path: 'browse', component: FileBrowserComponent},
 ];
 

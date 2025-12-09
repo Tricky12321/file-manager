@@ -52,5 +52,11 @@ export class FileService {
   }
 
 
+  deleteFolder(path: string) {
+    return this.http.post('api/file/deleteFolders',[path]);
+  }
 
+  deleteFolders(paths: string[]) {
+    return this.http.post('api/file/deleteFolders', paths);
+  }
 }

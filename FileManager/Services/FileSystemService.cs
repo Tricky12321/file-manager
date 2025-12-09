@@ -19,6 +19,7 @@ public class FileSystemService
 {
     private readonly QBittorrentService _qbittorrentService;
     private static object _lockObj = new object();
+
     private string[] ScanFolders = new string[]
     {
         "/torrent/TV",
@@ -118,7 +119,6 @@ public class FileSystemService
             {
                 result.AddRange(ScanFilesInPath(folder, inodeMap, qbitAllFiles, ref scanned));
             }
-
 
 
             Console.WriteLine("Caching file scan results to " + cachePath);
@@ -265,6 +265,99 @@ public class FileSystemService
         throw new FileNotFoundException($"File {path} not found.");
     }
 
+    public void DeleteFolder(string folderPath)
+    {
+        if (folderPath.IsNullOrWhitespace())
+        {
+            throw new ArgumentException("Folder path cannot be null or empty.", nameof(folderPath));
+        }
+
+        // Check if the path is less than 10 characters to avoid accidental deletions
+        if (folderPath.Length < 10)
+        {
+            throw new ArgumentException("Folder path is too short, deletion aborted for safety.", nameof(folderPath));
+        }
+
+        Console.WriteLine($"Deleting folder {folderPath}");
+        if (Directory.Exists(folderPath))
+        {
+            Console.WriteLine($"Deleting folder {folderPath}");
+            Directory.Delete(folderPath, true);
+            RemoveFolderFromCache(folderPath);
+            Console.WriteLine($"Deleted folder {folderPath}");
+            return;
+        }
+        else
+        {
+            Console.WriteLine("Folder not found: " + folderPath);
+        }
+
+        throw new DirectoryNotFoundException($"Folder {folderPath} not found.");
+    }
+
+    public List<FileInfo> GetEmptyFolders(string rootPath)
+    {
+        var fileInfos = new List<FileInfo>();
+        foreach (var dir in Directory.EnumerateDirectories(rootPath, "*", SearchOption.AllDirectories))
+        {
+            if (!Directory.EnumerateFileSystemEntries(dir).Any())
+            {
+                if (dir == rootPath)
+                {
+                    continue;
+                }
+
+                fileInfos.Add(new FileInfo()
+                {
+                    Path = dir,
+                    Size = dir.Length,
+                });
+            }
+        }
+
+        return fileInfos;
+    }
+
+    public List<FileInfo> GetSmallFolders(string rootPath, long sizeThresholdBytes = 10485760) // Default 10 MB
+    {
+        var fileInfos = new List<FileInfo>();
+        foreach (var dir in Directory.EnumerateDirectories(rootPath, "*", SearchOption.AllDirectories))
+        {
+            if (dir == rootPath)
+            {
+                continue;
+            }
+
+            long totalSize = 0;
+            foreach (var file in Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories))
+            {
+                try
+                {
+                    var fileInfo = new System.IO.FileInfo(file);
+                    totalSize += fileInfo.Length;
+                }
+                catch
+                {
+                    // Ignore unreadable files
+                }
+            }
+
+            if (totalSize < sizeThresholdBytes)
+            {
+                fileInfos.Add(new FileInfo()
+                {
+                    Path = dir,
+                    Size = totalSize,
+                    IsHardlink = false,
+                    HashDuplicate = false,
+                    FolderInQbit = false,
+                });
+            }
+        }
+
+        return fileInfos;
+    }
+
     private void RemoveFileFromCache(string path, string directoryPath)
     {
         var cachePath = "/qbit_data/file_cache.json";
@@ -281,6 +374,28 @@ public class FileSystemService
 
         // Update qBittorrent cache
         Console.WriteLine($"Updating qBittorrent cache after deleting file {path}");
+        _qbittorrentService.UpdateAllFilesCache(qbitAllFiles);
+    }
+    
+    private void RemoveFolderFromCache(string directoryPath)
+    {
+        var cachePath = "/qbit_data/file_cache.json";
+        var data = JsonConvert.DeserializeObject<List<FileInfo>>(File.ReadAllText(cachePath));
+        // Remove from cache
+        data = data.Where(f => !f.Path.StartsWith(directoryPath)).ToList();
+        File.WriteAllText(cachePath, JsonConvert.SerializeObject(data));
+        var qbitAllFiles = _qbittorrentService.GetTorrentFiles(null).GetAwaiter().GetResult();
+        var qbitFile = qbitAllFiles.Where(f => f.StartsWith(directoryPath)).ToList();
+        if (qbitFile.Any())
+        {
+            foreach (var file in qbitFile)
+            {
+                qbitAllFiles.Remove(file);
+            }
+        }
+
+        // Update qBittorrent cache
+        Console.WriteLine($"Updating qBittorrent cache after deleting folder {directoryPath}");
         _qbittorrentService.UpdateAllFilesCache(qbitAllFiles);
     }
 

@@ -18,9 +18,6 @@ import {ActivatedRoute, Router} from "@angular/router";
   standalone: false
 })
 export class FileBrowserComponent implements OnInit {
-  public dtOptions: DataTables.Settings = {
-    paging: false,
-  }
   public loading: boolean = false;
   public filePath: string = '';
   public fileList: FileInfo[] | null = null;
@@ -36,6 +33,8 @@ export class FileBrowserComponent implements OnInit {
   public currentUrl!: string;
   public folderPath: string = '';
   public folderMode: boolean = false;
+  public smallMode: boolean = false;
+  public emptyMode: boolean = false;
 
 
   constructor(public http: HttpClient, public generalService: GeneralService, public fileService: FileService, public dialogSrv: DialogService, public toastrService: ToastrService, public router: Router) {
@@ -74,7 +73,7 @@ export class FileBrowserComponent implements OnInit {
       }
       this.currentUrl = 'api/file/getFilesPost' + queryParams;
       return this.currentUrl;
-    } else if (this.folderPath != "") {
+    } else if (this.folderPath != "" && !this.smallMode && !this.emptyMode) {
       let folderInQbit = this.folderInQbitFilter?.toString() !== "null" ? this.folderInQbitFilter : null;
       var queryParams = "?path=" + this.folderPath;
       if (folderInQbit !== null) {
@@ -87,6 +86,12 @@ export class FileBrowserComponent implements OnInit {
         }
       }
       this.currentUrl = 'api/file/getFoldersPost' + queryParams;
+      return this.currentUrl;
+    } else if (this.folderPath != "" && this.smallMode) {
+      this.currentUrl = 'api/file/getSmallFolders?path='+this.folderPath;
+      return this.currentUrl;
+    } else if (this.folderPath != "" && this.emptyMode) {
+      this.currentUrl = 'api/file/getEmptyFolders?path='+this.folderPath;
       return this.currentUrl;
     }
     throw new Error("No path set for file browser");
@@ -109,6 +114,22 @@ export class FileBrowserComponent implements OnInit {
       this.folderMode = true;
     } else if (window.location.pathname == "/directories/tv") {
       this.folderPath = "/torrent/TV"
+      this.folderMode = true;
+    } else if (window.location.pathname == "/directories/empty/tv") {
+      this.folderPath = "/torrent/TV"
+      this.emptyMode = true;
+      this.folderMode = true;
+    } else if (window.location.pathname == "/directories/empty/film") {
+      this.folderPath = "/torrent/Film"
+      this.emptyMode = true;
+      this.folderMode = true;
+    } else if (window.location.pathname == "/directories/small/tv") {
+      this.folderPath = "/torrent/TV"
+      this.smallMode = true;
+      this.folderMode = true;
+    }  else if (window.location.pathname == "/directories/small/film") {
+      this.folderPath = "/torrent/Film"
+      this.smallMode = true;
       this.folderMode = true;
     }
     this.load();
@@ -210,5 +231,29 @@ export class FileBrowserComponent implements OnInit {
       folderPath = fileInfo.folderPath;
     }
     this.router.navigate(['/browse'], {queryParams: {path: folderPath}})
+  }
+
+  deleteFolder(fileInfo: FileInfo) {
+    this.fileService.deleteFolder(fileInfo.path).subscribe({
+      next: (data) => {
+        this.toastrService.success("Folder deleted");
+        this.load();
+      },
+      error: () => {
+        this.toastrService.error("Error deleting folder");
+      }
+    });
+  }
+
+  deleteSelectedFolders() {
+    this.fileService.deleteFolders(this.getFiles()!.map(x => x.path)).subscribe({
+      next: (data) => {
+        this.toastrService.success("Folders deleted");
+        this.load();
+      },
+      error: () => {
+        this.toastrService.error("Error deleting folders");
+      }
+    });
   }
 }

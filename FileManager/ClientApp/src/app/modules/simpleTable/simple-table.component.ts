@@ -33,13 +33,13 @@ export class SimpleTableComponent implements AfterViewInit {
   @Input() data: any[] = [];             // client-side data
   @Input() serverSide = false;           // toggle client/server mode
   @Input() template!: TemplateRef<any>;  // row template
-  @Input() pageSize: number = 10;
+  @Input() pageSize: number = 25;
   @Input() loadingText: string = 'Loading...';
   // Should be the URL to post TableRequest to and get TableResult<any> from
   // It should update when urlChanged is triggered
   @Input() url: string = "";
   @Output() urlChange: EventEmitter<string> = new EventEmitter<string>();
-  @Input() pageSizeOptions: number[] = [10, 25, 50, 100];
+  @Input() pageSizeOptions: number[] = [25, 50, 100, 200, 500];
 
   // I need a function that can be called to refresh data from the calling component, e.g. after an action
   public currentPage: number = 1;
