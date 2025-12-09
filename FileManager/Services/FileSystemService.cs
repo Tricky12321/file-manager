@@ -267,8 +267,7 @@ public class FileSystemService
 
     private void RemoveFileFromCache(string path, string directoryPath)
     {
-        var directoryHashed = directoryPath.Sha1Hash();
-        var cachePath = "/qbit_data/" + directoryHashed + "_file_cache.json";
+        var cachePath = "/qbit_data/file_cache.json";
         var data = JsonConvert.DeserializeObject<List<FileInfo>>(File.ReadAllText(cachePath));
         // Remove from cache
         data = data.Where(f => f.Path != path).ToList();
