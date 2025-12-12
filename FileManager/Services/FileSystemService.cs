@@ -119,7 +119,14 @@ public class FileSystemService
                 FolderInQbit = inQbit
             });
         }
-
+        if (folderInQbit == true)
+        {
+            fileInfos = fileInfos.Where(f => f.FolderInQbit).ToList();
+        }
+        else if (folderInQbit == false)
+        {
+            fileInfos = fileInfos.Where(f => !f.FolderInQbit).ToList();
+        }
         return fileInfos;
         /*
 
