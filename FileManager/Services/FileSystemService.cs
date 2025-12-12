@@ -72,6 +72,7 @@ public class FileSystemService
 
     public List<FileInfo> GetDirectoriesInDirectory(string directoryPath, bool? folderInQbit = null, bool clearCache = false)
     {
+        var qbittorrentFiles = _qbittorrentService.GetTorrentList(clearCache).GetAwaiter().GetResult();
         var fileInfos = new List<FileInfo>();
         foreach (var dir in Directory.EnumerateDirectories(directoryPath, "*", SearchOption.AllDirectories))
         {
@@ -100,7 +101,7 @@ public class FileSystemService
                 Size = totalSize,
                 IsHardlink = false,
                 HashDuplicate = false,
-                FolderInQbit = false,
+                FolderInQbit = qbittorrentFiles.Any(x => x.ContentPath.StartsWith(dir))
             });
         }
 
