@@ -94,14 +94,18 @@ public class FileSystemService
                     // Ignore unreadable files
                 }
             }
-
+        
             fileInfos.Add(new FileInfo()
             {
                 Path = dir,
                 Size = totalSize,
                 IsHardlink = false,
                 HashDuplicate = false,
-                FolderInQbit = qbittorrentFiles.Any(x => x.ContentPath.StartsWith(dir))
+                FolderInQbit = qbittorrentFiles.Any(x =>
+                {
+                    var folderPath = System.IO.Path.GetDirectoryName(x.ContentPath);
+                    return dir.StartsWith(folderPath);
+                })
             });
         }
 
