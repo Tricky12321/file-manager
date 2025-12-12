@@ -90,6 +90,7 @@ public class FileSystemService
                 });
             }
         }
+        Console.WriteLine("Folder scan complete, found " + fileInfos.Count + " folders");
         return fileInfos;
         /*
         List<FileInfo> files = GetFilesInDirectory(directoryPath, null, null, folderInQbit, null, clearCache);

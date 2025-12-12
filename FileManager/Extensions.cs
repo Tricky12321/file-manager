@@ -93,12 +93,13 @@ public static class Extensions
                 }).ToList();
         }
         // Apply pagination
-        results = results.Skip((tableRequest.PageNumber - 1) * tableRequest.PageSize)
+        var outputResults = results.Skip((tableRequest.PageNumber - 1) * tableRequest.PageSize)
             .Take(tableRequest.PageSize)
             .ToList();
         var output = new TableResult<T>()
         {
-            Items = results,
+            Items = outputResults,
+            FilteredCount = results.Count,
             TotalCount = totalResults,
         };
         return output;
