@@ -78,10 +78,6 @@ public class FileSystemService
         {
             if (!Directory.EnumerateFileSystemEntries(dir).Any())
             {
-                if (dir == directoryPath)
-                {
-                    continue;
-                }
 
                 fileInfos.Add(new FileInfo()
                 {
