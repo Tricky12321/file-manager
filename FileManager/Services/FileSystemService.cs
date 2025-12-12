@@ -75,6 +75,8 @@ public class FileSystemService
         var fileInfos = new List<FileInfo>();
         var qbittorrentFiles = _qbittorrentService.GetTorrentList(clearCache).GetAwaiter().GetResult();
         Console.WriteLine("Scanning for folders in " + directoryPath);
+        var folders = Directory.EnumerateDirectories(directoryPath, "*", SearchOption.AllDirectories);
+        Console.WriteLine("Found " + folders.Count() + " folders");
         foreach (var dir in Directory.EnumerateDirectories(directoryPath, "*", SearchOption.AllDirectories))
         {
             if (!Directory.EnumerateFileSystemEntries(dir).Any())
