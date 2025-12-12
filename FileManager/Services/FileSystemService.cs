@@ -209,7 +209,7 @@ public class FileSystemService
                     Inode = inodeId,
                     IsHardlink = isHardlink,
                     Size = size,
-                    PartialHash = hashCheck ? inodeHashes[kv.Key] : null,
+                    PartialHash = hashCheck ? inodeHashes[kv.Key] : string.Empty,
                     InQbit = qbitAllFiles.Any(qb => qb == path),
                     FolderInQbit =
                         qbitAllFiles.Any(qb => qb.StartsWith(System.IO.Path.GetDirectoryName(path) ?? "")),

@@ -115,12 +115,16 @@ public static class Extensions
     
     public static List<Models.FileInfo> FilterResults(this List<Models.FileInfo> result, string directoryPath, bool? hardlink, bool? inQbit, bool? folderInQbit, bool? hashDuplicate)
     {
-        var patialHashDictionary = result.Where(x => x.PartialHash != null).GroupBy(x => x.PartialHash).ToDictionary(x => x.Key, x => x.Count());
+        var patialHashDictionary = result.Where(x => !x.PartialHash.IsNullOrWhitespace()).GroupBy(x => x.PartialHash).ToDictionary(x => x.Key, x => x.Count());
         result = result.Select(fi =>
         {
-            if (patialHashDictionary.TryGetValue(fi.PartialHash, out var value))
+            if (fi.PartialHash != null && patialHashDictionary.TryGetValue(fi.PartialHash, out var value))
             {
                 fi.HashDuplicate = value > 1;
+            }
+            else
+            {
+                fi.HashDuplicate = false;
             }
             return fi;
         }).ToList();
