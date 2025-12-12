@@ -132,7 +132,7 @@ public class FileSystemService
         }
     }
 
-    private static List<FileInfo> ScanFilesInPath(string directoryPath, Dictionary<(ulong dev, ulong ino), List<(string path, long size)>> inodeMap, List<string> qbitAllFiles, ref int scanned)
+    private static List<FileInfo> ScanFilesInPath(string directoryPath, Dictionary<(ulong dev, ulong ino), List<(string path, long size)>> inodeMap, List<string> qbitAllFiles, ref int scanned, bool hashCheck = false)
     {
         // Step 1: Scan all files and collect size + inode
         foreach (var file in Directory.EnumerateFiles(directoryPath, "*", SearchOption.AllDirectories))
@@ -172,7 +172,9 @@ public class FileSystemService
         int totalInodes = inodeList.Count;
         int processedInodes = 0;
         var lockObj = new object();
-
+        if (hashCheck)
+        {
+            
         Parallel.ForEach(inodeList, inodeEntry =>
         {
             var firstFile = inodeEntry.files[0];
@@ -190,6 +192,8 @@ public class FileSystemService
                 }
             }
         });
+        }
+
         // Step 3: Flatten to FileInfo
         var result = new List<FileInfo>();
         foreach (var kv in inodeMap)
@@ -206,7 +210,7 @@ public class FileSystemService
                     Inode = inodeId,
                     IsHardlink = isHardlink,
                     Size = size,
-                    PartialHash = hash,
+                    PartialHash = hashCheck ? inodeHashes[kv.Key] : null,
                     InQbit = qbitAllFiles.Any(qb => qb == path),
                     FolderInQbit =
                         qbitAllFiles.Any(qb => qb.StartsWith(System.IO.Path.GetDirectoryName(path) ?? "")),
