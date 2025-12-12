@@ -348,7 +348,7 @@ public class FileSystemService
             Console.WriteLine("Folder not found: " + folderPath);
         }
 
-        throw new DirectoryNotFoundException($"Folder {folderPath} not found.");
+        //throw new DirectoryNotFoundException($"Folder {folderPath} not found.");
     }
 
     public List<FileInfo> GetEmptyFolders(string rootPath)
