@@ -70,8 +70,29 @@ public class FileSystemService
         return output;
     }
 
-    public List<DirectoryInfo> GetDirectoriesInDirectory(string directoryPath, bool? folderInQbit = null, bool clearCache = false)
+    public List<FileInfo> GetDirectoriesInDirectory(string directoryPath, bool? folderInQbit = null, bool clearCache = false)
     {
+        var fileInfos = new List<FileInfo>();
+        var qbittorrentFiles = _qbittorrentService.GetTorrentList(clearCache).GetAwaiter().GetResult();
+        foreach (var dir in Directory.EnumerateDirectories(directoryPath, "*", SearchOption.AllDirectories))
+        {
+            if (!Directory.EnumerateFileSystemEntries(dir).Any())
+            {
+                if (dir == directoryPath)
+                {
+                    continue;
+                }
+
+                fileInfos.Add(new FileInfo()
+                {
+                    Path = dir,
+                    Size = dir.Length,
+                    FolderInQbit = qbittorrentFiles.Any(x => x.ContentPath.StartsWith(dir))
+                });
+            }
+        }
+        return fileInfos;
+        /*
         List<FileInfo> files = GetFilesInDirectory(directoryPath, null, null, folderInQbit, null, clearCache);
         var grouped = files.GroupBy(f => f.FolderPath);
         var folders = new List<DirectoryInfo>();
@@ -85,8 +106,8 @@ public class FileSystemService
                 Size = group.Sum(f => f.Size)
             });
         }
-
         return folders;
+        */
     }
 
     public List<FileInfo> GetFilesInDirectory(string directoryPath, bool? hardlink = null, bool? inQbit = null, bool? folderInQbit = null, bool? hashDuplicate = null, bool clearCache = false)
