@@ -132,7 +132,8 @@ public class FileSystemService
         }
     }
 
-    private static List<FileInfo> ScanFilesInPath(string directoryPath, Dictionary<(ulong dev, ulong ino), List<(string path, long size)>> inodeMap, List<string> qbitAllFiles, ref int scanned, bool hashCheck = false)
+    private static List<FileInfo> ScanFilesInPath(string directoryPath, Dictionary<(ulong dev, ulong ino), List<(string path, long size)>> inodeMap, List<string> qbitAllFiles, ref int scanned,
+        bool hashCheck = false)
     {
         // Step 1: Scan all files and collect size + inode
         foreach (var file in Directory.EnumerateFiles(directoryPath, "*", SearchOption.AllDirectories))
@@ -174,24 +175,23 @@ public class FileSystemService
         var lockObj = new object();
         if (hashCheck)
         {
-            
-        Parallel.ForEach(inodeList, inodeEntry =>
-        {
-            var firstFile = inodeEntry.files[0];
-            string hash = ComputePartialHash(firstFile.path, 1024 * 1024 * 8); // 8 MB
-            var key = (inodeEntry.dev, inodeEntry.ino);
-            inodeHashes[key] = hash;
-
-            lock (lockObj)
+            Parallel.ForEach(inodeList, inodeEntry =>
             {
-                processedInodes++;
-                if (processedInodes % 50 == 0 || processedInodes == totalInodes)
+                var firstFile = inodeEntry.files[0];
+                string hash = ComputePartialHash(firstFile.path, 1024 * 1024 * 8); // 8 MB
+                var key = (inodeEntry.dev, inodeEntry.ino);
+                inodeHashes[key] = hash;
+
+                lock (lockObj)
                 {
-                    double pct = processedInodes * 100.0 / totalInodes;
-                    Console.WriteLine($"Computed hashes for {processedInodes}/{totalInodes} inodes ({pct:F2}%)");
+                    processedInodes++;
+                    if (processedInodes % 50 == 0 || processedInodes == totalInodes)
+                    {
+                        double pct = processedInodes * 100.0 / totalInodes;
+                        Console.WriteLine($"Computed hashes for {processedInodes}/{totalInodes} inodes ({pct:F2}%)");
+                    }
                 }
-            }
-        });
+            });
         }
 
         // Step 3: Flatten to FileInfo
@@ -200,7 +200,6 @@ public class FileSystemService
         {
             bool isHardlink = kv.Value.Count > 1;
             string inodeId = $"{kv.Key.dev}:{kv.Key.ino}";
-            string hash = inodeHashes[kv.Key];
 
             foreach (var (path, size) in kv.Value)
             {
@@ -380,7 +379,7 @@ public class FileSystemService
         Console.WriteLine($"Updating qBittorrent cache after deleting file {path}");
         _qbittorrentService.UpdateAllFilesCache(qbitAllFiles);
     }
-    
+
     private void RemoveFolderFromCache(string directoryPath)
     {
         var cachePath = "/qbit_data/file_cache.json";
