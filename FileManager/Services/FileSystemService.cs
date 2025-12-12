@@ -73,6 +73,41 @@ public class FileSystemService
     public List<FileInfo> GetDirectoriesInDirectory(string directoryPath, bool? folderInQbit = null, bool clearCache = false)
     {
         var fileInfos = new List<FileInfo>();
+        foreach (var dir in Directory.EnumerateDirectories(directoryPath, "*", SearchOption.AllDirectories))
+        {
+            if (dir == directoryPath)
+            {
+                continue;
+            }
+
+            long totalSize = 0;
+            foreach (var file in Directory.EnumerateFiles(dir, "*", SearchOption.AllDirectories))
+            {
+                try
+                {
+                    var fileInfo = new System.IO.FileInfo(file);
+                    totalSize += fileInfo.Length;
+                }
+                catch
+                {
+                    // Ignore unreadable files
+                }
+            }
+
+            fileInfos.Add(new FileInfo()
+            {
+                Path = dir,
+                Size = totalSize,
+                IsHardlink = false,
+                HashDuplicate = false,
+                FolderInQbit = false,
+            });
+        }
+
+        return fileInfos;
+        /*
+
+        var fileInfos = new List<FileInfo>();
         var qbittorrentFiles = _qbittorrentService.GetTorrentList(clearCache).GetAwaiter().GetResult();
         Console.WriteLine("Scanning for folders in " + directoryPath);
         var folders = Directory.EnumerateDirectories(directoryPath, "*", SearchOption.AllDirectories);
@@ -89,7 +124,6 @@ public class FileSystemService
 
         Console.WriteLine("Folder scan complete, found " + fileInfos.Count + " folders");
         return fileInfos;
-        /*
         List<FileInfo> files = GetFilesInDirectory(directoryPath, null, null, folderInQbit, null, clearCache);
         var grouped = files.GroupBy(f => f.FolderPath);
         var folders = new List<DirectoryInfo>();
