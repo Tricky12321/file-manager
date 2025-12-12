@@ -79,17 +79,14 @@ public class FileSystemService
         Console.WriteLine("Found " + folders.Count() + " folders");
         foreach (var dir in Directory.EnumerateDirectories(directoryPath, "*", SearchOption.AllDirectories))
         {
-            if (!Directory.EnumerateFileSystemEntries(dir).Any())
+            fileInfos.Add(new FileInfo()
             {
-
-                fileInfos.Add(new FileInfo()
-                {
-                    Path = dir,
-                    Size = dir.Length,
-                    FolderInQbit = qbittorrentFiles.Any(x => x.ContentPath.StartsWith(dir))
-                });
-            }
+                Path = dir,
+                Size = dir.Length,
+                FolderInQbit = qbittorrentFiles.Any(x => x.ContentPath.StartsWith(dir))
+            });
         }
+
         Console.WriteLine("Folder scan complete, found " + fileInfos.Count + " folders");
         return fileInfos;
         /*
