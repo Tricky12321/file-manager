@@ -12,4 +12,5 @@ export interface FileInfo {
   sizeGb: number;
   selected: boolean;
   hashDuplicate: boolean;
+  torrentPath: string;
 }

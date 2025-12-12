@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
@@ -40,7 +41,7 @@ public static class Extensions
             }
         }
     }
-    
+
     public static TableResult<T> ToTableResponse<T>(this List<T> results, TableRequestDto tableRequest = null)
     {
         var totalResults = results.Count;
@@ -55,6 +56,7 @@ public static class Extensions
                 SortDirection = "asc"
             };
         }
+
         // Apply search filter
         if (!string.IsNullOrWhiteSpace(tableRequest.Search))
         {
@@ -73,6 +75,7 @@ public static class Extensions
                         }
                     }
                 }
+
                 return false;
             }).ToList();
         }
@@ -83,15 +86,10 @@ public static class Extensions
         {
             //Extensions.GetPropertyValues(results.First());
             results = tableRequest.SortDirection == "desc"
-                ? results.OrderByDescending(r =>
-                {
-                    return r.GetType().GetProperty(tableRequest.SortColumn)?.GetValue(r);
-                }).ToList()
-                : results.OrderBy(r =>
-                {
-                    return r.GetType().GetProperty(tableRequest.SortColumn)?.GetValue(r);
-                }).ToList();
+                ? results.OrderByDescending(r => { return r.GetType().GetProperty(tableRequest.SortColumn)?.GetValue(r); }).ToList()
+                : results.OrderBy(r => { return r.GetType().GetProperty(tableRequest.SortColumn)?.GetValue(r); }).ToList();
         }
+
         // Apply pagination
         var outputResults = results.Skip((tableRequest.PageNumber - 1) * tableRequest.PageSize)
             .Take(tableRequest.PageSize)
@@ -111,9 +109,10 @@ public static class Extensions
         {
             return null;
         }
+
         return Convert.ToHexString(SHA1.HashData(System.Text.Encoding.UTF8.GetBytes(input)));
     }
-    
+
     public static List<Models.FileInfo> FilterResults(this List<Models.FileInfo> result, string directoryPath, bool? hardlink, bool? inQbit, bool? folderInQbit, bool? hashDuplicate)
     {
         var patialHashDictionary = result.Where(x => !x.PartialHash.IsNullOrWhitespace()).GroupBy(x => x.PartialHash).ToDictionary(x => x.Key, x => x.Count());
@@ -127,17 +126,28 @@ public static class Extensions
             {
                 fi.HashDuplicate = false;
             }
+
             return fi;
         }).ToList();
         return result
             .Where(x => x.FolderPath != null && x.FolderPath.StartsWith(directoryPath))
             .Where(file => (hardlink == null || file.IsHardlink == hardlink)
-                                    && (inQbit == null || file.InQbit == inQbit)
-                                    && (folderInQbit == null || file.FolderInQbit == folderInQbit)
-                                    && (hashDuplicate == null || (hashDuplicate == true
-                                        ? file.HashDuplicate
-                                        : file.HashDuplicate == false))
-        ).ToList();
+                           && (inQbit == null || file.InQbit == inQbit)
+                           && (folderInQbit == null || file.FolderInQbit == folderInQbit)
+                           && (hashDuplicate == null || (hashDuplicate == true
+                               ? file.HashDuplicate
+                               : file.HashDuplicate == false))
+            ).ToList();
     }
 
+    public static bool IsFile(this string path)
+    {
+        FileAttributes attr = File.GetAttributes(@"c:\Temp");
+        return !attr.HasFlag(FileAttributes.Directory);
+    }
+    public static bool IsDirectory(this string path)
+    {
+        FileAttributes attr = File.GetAttributes(path);
+        return attr.HasFlag(FileAttributes.Directory);
+    }
 }
