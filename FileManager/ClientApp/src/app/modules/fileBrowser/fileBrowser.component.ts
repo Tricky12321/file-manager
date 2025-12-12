@@ -43,7 +43,7 @@ export class FileBrowserComponent implements OnInit {
     this.inQbitFilter = localStorage.getItem("inQbit") == "null" ? null : (localStorage.getItem("inQbit") == "true");
     this.folderInQbitFilter = localStorage.getItem("folderInQbit") == "null" ? null : (localStorage.getItem("folderInQbit") == "true");
     this.needConfirm = localStorage.getItem("needConfirm") == "null" ? true : (localStorage.getItem("folderInQbit") == "true");
-    this.hashDuplicate = localStorage.getItem("hashDuplicate") == "null" ? true : (localStorage.getItem("hashDuplicate") == "true");
+    this.hashDuplicate = localStorage.getItem("hashDuplicate") == "null" ? null : (localStorage.getItem("hashDuplicate") == "true");
   }
 
   buildUrl(): string {
