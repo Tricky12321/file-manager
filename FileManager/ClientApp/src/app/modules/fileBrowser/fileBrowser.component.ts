@@ -246,7 +246,7 @@ export class FileBrowserComponent implements OnInit {
   }
 
   deleteSelectedFolders() {
-    this.fileService.deleteFolders(this.getFiles()!.map(x => x.path)).subscribe({
+    this.fileService.deleteFolders(this.getFiles().filter(x => x.selected)!.map(x => x.path)).subscribe({
       next: (data) => {
         this.toastrService.success("Folders deleted");
         this.load();
