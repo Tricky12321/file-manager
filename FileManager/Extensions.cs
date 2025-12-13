@@ -147,7 +147,18 @@ public static class Extensions
     }
     public static bool IsDirectory(this string path)
     {
-        FileAttributes attr = File.GetAttributes(path);
-        return attr.HasFlag(FileAttributes.Directory);
+        try
+        {
+            if (Directory.Exists(path))
+            {
+                FileAttributes attr = File.GetAttributes(path);
+                return attr.HasFlag(FileAttributes.Directory);    
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
+        return false;
     }
 }
