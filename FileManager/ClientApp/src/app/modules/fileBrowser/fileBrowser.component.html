@@ -141,6 +141,9 @@
       <td>
         <i class="fa" [class.text-danger]="!fileInfo.folderInQbit" [class.fa-times]="!fileInfo.folderInQbit"
            [class.text-success]="fileInfo.folderInQbit" [class.fa-check]="fileInfo.folderInQbit"></i>
+        @if (fileInfo.torrentPath != null && fileInfo.torrentPath != "") {
+          <i class="fa fa-info-circle text-info ms-2" [ngbTooltip]="fileInfo.torrentPath"></i>
+        }
       </td>
       <td [attr.data-sort]="fileInfo.partialHash">{{ fileInfo.partialHash }}</td>
       <td>
