@@ -98,7 +98,9 @@ public class FileSystemService
             var torrentPath = "";
             var inQbit = qbittorrentFiles.Any(x =>
             {
-                if (dir.StartsWith(x.ContentPath) || x.ContentPath.StartsWith(dir))
+                var directoryName = System.IO.Path.GetDirectoryName(x.ContentPath);
+
+                if (dir.StartsWith(x.ContentPath) || (!ScanFolders.Contains(directoryName) && (directoryName.StartsWith(dir) || dir.StartsWith(directoryName))))
                 {
                     torrentPath = x.ContentPath;
                     return true;
