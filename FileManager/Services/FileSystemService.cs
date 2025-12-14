@@ -98,14 +98,12 @@ public class FileSystemService
             var torrentPath = "";
             var inQbit = qbittorrentFiles.Any(x =>
             {
-                if (x.ContentPath.IsDirectory())
+                if (dir.StartsWith(x.ContentPath) || x.ContentPath.StartsWith(dir))
                 {
-                    if (dir.StartsWith(x.ContentPath))
-                    {
-                        torrentPath = x.ContentPath;
-                        return true;
-                    }    
-                } 
+                    torrentPath = x.ContentPath;
+                    return true;
+                }
+
                 return false;
             });
 
@@ -119,6 +117,7 @@ public class FileSystemService
                 FolderInQbit = inQbit
             });
         }
+
         if (folderInQbit == true)
         {
             fileInfos = fileInfos.Where(f => f.FolderInQbit).ToList();
@@ -127,6 +126,7 @@ public class FileSystemService
         {
             fileInfos = fileInfos.Where(f => !f.FolderInQbit).ToList();
         }
+
         return fileInfos;
         /*
 
