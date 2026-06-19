@@ -13,29 +13,31 @@ import {GeneralService} from "../../shared/services/general.service";
 })
 export class QbitfilesComponent implements OnInit {
   public torrentList: string[] | null = null;
+  public refreshing: boolean = false;
 
   constructor(public generalService: GeneralService) {
 
   }
 
   ngOnInit() {
-    this.load();
+    this.load(false);
   }
 
-  load() {
-    this.generalService.getTorrentFiles().subscribe({
+  load(clearCache: boolean = false) {
+    this.refreshing = true;
+    this.generalService.getTorrentFiles(clearCache).subscribe({
       next: (data) => {
         this.torrentList = data;
+        this.refreshing = false;
+      },
+      error: () => {
+        this.refreshing = false;
       },
     });
   }
 
   refreshData() {
     this.torrentList = null;
-    this.generalService.getTorrentFiles(true).subscribe({
-      next: (data) => {
-        this.torrentList = data;
-      },
-    });
+    this.load(true);
   }
 }

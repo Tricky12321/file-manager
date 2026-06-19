@@ -1,5 +1,8 @@
 <h1>Torrent dashboard</h1>
-<button (click)="refreshData()" class="btn btn-secondary">Refresh data</button>
+<button (click)="refreshData()" class="btn btn-secondary" [disabled]="refreshing">
+  @if (refreshing) { <i class="fa fa-spinner fa-spin me-2"></i> }
+  Refresh data
+</button>
 @if (this.torrentList != null) {
 <table class="table table-bordered table-striped table-hover modern-table">
   <thead>

@@ -258,6 +258,29 @@ table.table-bordered.table-collaps tbody tr:nth-child(even) td {
   }
 }
 
+/* Global loading bar — shown while any HTTP request is in flight */
+.global-loading-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 2000;
+  background: linear-gradient(90deg, transparent, var(--bs-primary), transparent);
+  background-size: 40% 100%;
+  background-repeat: no-repeat;
+  animation: global-loading-bar 1s infinite linear;
+}
+
+@keyframes global-loading-bar {
+  0% {
+    background-position: -40% 0;
+  }
+  100% {
+    background-position: 140% 0;
+  }
+}
+
 /* App sidebar */
 .sidebar {
   width: 280px;

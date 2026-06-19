@@ -13,6 +13,7 @@ import {GeneralService} from "../../shared/services/general.service";
 })
 export class QbitdashboardComponent implements OnInit {
   public torrentList: TorrentInfo[] | null = null;
+  public refreshing: boolean = false;
 
   constructor(public generalService: GeneralService) {
 
@@ -23,20 +24,21 @@ export class QbitdashboardComponent implements OnInit {
   }
 
   load() {
+    this.refreshing = true;
     this.generalService.getData().subscribe({
       next: (data) => {
         this.torrentList = data;
+        this.refreshing = false;
+      },
+      error: () => {
+        this.refreshing = false;
       },
     });
   }
 
   refreshData() {
     this.torrentList = null;
-    this.generalService.refreshData().subscribe({
-      next: (data) => {
-        this.torrentList = data;
-      },
-    });
+    this.load();
   }
 
 

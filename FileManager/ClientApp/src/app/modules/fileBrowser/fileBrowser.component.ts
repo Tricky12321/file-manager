@@ -38,6 +38,8 @@ export class FileBrowserComponent implements OnInit {
   public emptyMode: boolean = false;
   public sampleMode: boolean = false;
   public samplePath: string = '';
+  // True while a delete request is in flight; disables action buttons and shows a spinner.
+  public busy: boolean = false;
 
 
   constructor(public http: HttpClient, public generalService: GeneralService, public fileService: FileService, public dialogSrv: DialogService, public toastrService: ToastrService, public router: Router, public route: ActivatedRoute) {
@@ -160,22 +162,28 @@ export class FileBrowserComponent implements OnInit {
     if (this.needConfirm) {
       this.dialogSrv.openConfirmDialog("File to delete: " + fileInfo.path, "Are you sure you want to delete this file?").afterClosed().subscribe((result) => {
         if (result == true) {
+          this.busy = true;
           this.generalService.deleteFile(fileInfo.path, this.filePath).subscribe({
             next: (data) => {
+              this.busy = false;
               this.load()
             },
             error: () => {
+              this.busy = false;
               this.toastrService.error("Error deleting file");
             }
           });
         }
       });
     } else {
+      this.busy = true;
       this.generalService.deleteFile(fileInfo.path).subscribe({
         next: (data) => {
+          this.busy = false;
           this.load();
         },
         error: () => {
+          this.busy = false;
           this.toastrService.error("Error deleting file");
         }
       });
@@ -208,12 +216,15 @@ export class FileBrowserComponent implements OnInit {
       if (paths.length == 0) {
         return;
       }
+      this.busy = true;
       this.generalService.deleteFiles(paths).subscribe({
         next: () => {
+          this.busy = false;
           this.toastrService.success(`Deleted ${paths.length} sample file(s)`);
           this.load();
         },
         error: () => {
+          this.busy = false;
           this.toastrService.error("Error deleting files, please refresh and try again");
         }
       });
@@ -228,11 +239,14 @@ export class FileBrowserComponent implements OnInit {
     }
     this.dialogSrv.openConfirmDialog("Are you sure you want to delete all selected files?").afterClosed().subscribe((result) => {
       if (result == true) {
+        this.busy = true;
         this.generalService.deleteFiles(filesToDelete).subscribe({
           next: (data) => {
+            this.busy = false;
             this.load();
           },
           error: () => {
+            this.busy = false;
             this.toastrService.error("Error deleting files, please refresh and try again");
           }
         });
@@ -284,24 +298,30 @@ export class FileBrowserComponent implements OnInit {
   }
 
   deleteFolder(fileInfo: FileInfo) {
+    this.busy = true;
     this.fileService.deleteFolder(fileInfo.path).subscribe({
       next: (data) => {
+        this.busy = false;
         this.toastrService.success("Folder deleted");
         this.load();
       },
       error: () => {
+        this.busy = false;
         this.toastrService.error("Error deleting folder");
       }
     });
   }
 
   deleteSelectedFolders() {
+    this.busy = true;
     this.fileService.deleteFolders(this.getFiles().filter(x => x.selected)!.map(x => x.path)).subscribe({
       next: (data) => {
+        this.busy = false;
         this.toastrService.success("Folders deleted");
         this.load();
       },
       error: () => {
+        this.busy = false;
         this.toastrService.error("Error deleting folders");
       }
     });

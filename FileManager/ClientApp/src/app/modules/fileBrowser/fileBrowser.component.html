@@ -5,9 +5,15 @@
 @if (this.sampleMode) {
   <h1>Sample cleanup ({{ this.samplePath }})</h1>
   <div class="mb-3">
-    <button class="btn btn-danger" (click)="deleteAllSamples()">Delete all selected…</button>
+    <button class="btn btn-danger" (click)="deleteAllSamples()" [disabled]="busy">
+      @if (busy) { <i class="fa fa-spinner fa-spin me-2"></i> }
+      Delete all selected…
+    </button>
     <button class="btn btn-secondary ms-2" (click)="toggleSelectedFiles()">Toggle selected</button>
-    <button class="btn btn-secondary ms-2" (click)="this.load(true)">Refresh data</button>
+    <button class="btn btn-secondary ms-2" (click)="this.load(true)" [disabled]="simpleTableComponent?.isLoading">
+      @if (simpleTableComponent?.isLoading) { <i class="fa fa-spinner fa-spin me-2"></i> }
+      Refresh data
+    </button>
   </div>
   <p class="text-muted">Files whose name contains "sample" or that live in a Sample/ folder. Pre-selected for deletion — review before confirming.</p>
 
@@ -31,7 +37,10 @@
         [attr.data-sort]="fileInfo.size">{{ fileInfo.sizeGb > 1 ? fileInfo.sizeGb + " GB" : fileInfo.sizeMb + " MB" }}
       </td>
       <td>
-        <button class="btn btn-sm btn-danger" (click)="deleteFile(fileInfo)">Delete</button>
+        <button class="btn btn-sm btn-danger" (click)="deleteFile(fileInfo)" [disabled]="busy">
+          @if (busy) { <i class="fa fa-spinner fa-spin me-1"></i> }
+          Delete
+        </button>
       </td>
     </tr>
   </ng-template>
@@ -88,9 +97,15 @@
             </div>
             <div>
               @if (!this.folderMode) {
-                <button class="btn btn-primary ms-2" (click)="deleteSelectedFiles()">Delete selected files</button>
+                <button class="btn btn-primary ms-2" (click)="deleteSelectedFiles()" [disabled]="busy">
+                  @if (busy) { <i class="fa fa-spinner fa-spin me-2"></i> }
+                  Delete selected files
+                </button>
               } @else if (this.folderMode) {
-                <button class="btn btn-primary ms-2" (click)="deleteSelectedFolders()">Delete selected folder</button>
+                <button class="btn btn-primary ms-2" (click)="deleteSelectedFolders()" [disabled]="busy">
+                  @if (busy) { <i class="fa fa-spinner fa-spin me-2"></i> }
+                  Delete selected folder
+                </button>
               }
               <button class="btn btn-secondary ms-2" (click)="toggleSelectedFiles()">Toggle selected {{ this.folderMode ? "folders" : "files" }}</button>
             </div>
@@ -99,7 +114,10 @@
       }
     </div>
     <div class="col-3">
-      <button class="btn btn-secondary mt-4" (click)="this.load(true)">Refresh data</button>
+      <button class="btn btn-secondary mt-4" (click)="this.load(true)" [disabled]="simpleTableComponent?.isLoading">
+        @if (simpleTableComponent?.isLoading) { <i class="fa fa-spinner fa-spin me-2"></i> }
+        Refresh data
+      </button>
     </div>
   </div>
   @if (!this.folderMode) {
@@ -152,7 +170,10 @@
         </td>
         <td [attr.data-sort]="fileInfo.partialHash">{{ fileInfo.partialHash }}</td>
         <td>
-          <button class="btn btn-sm btn-danger me-2" (click)="deleteFile(fileInfo)">Delete</button>
+          <button class="btn btn-sm btn-danger me-2" (click)="deleteFile(fileInfo)" [disabled]="busy">
+            @if (busy) { <i class="fa fa-spinner fa-spin me-1"></i> }
+            Delete
+          </button>
           <button class="btn btn-sm btn-warning" (click)="openFolder(fileInfo)">Open Folder</button>
         </td>
       </tr>
@@ -188,7 +209,10 @@
         <td [attr.data-sort]="fileInfo.partialHash">{{ fileInfo.partialHash }}</td>
         <td>
           <button class="btn btn-sm btn-warning me-2" (click)="openFolder(fileInfo)">Open Folder</button>
-          <button class="btn btn-sm btn-danger" (click)="deleteFolder(fileInfo)">Delete Folder</button>
+          <button class="btn btn-sm btn-danger" (click)="deleteFolder(fileInfo)" [disabled]="busy">
+            @if (busy) { <i class="fa fa-spinner fa-spin me-1"></i> }
+            Delete Folder
+          </button>
         </td>
       </tr>
     </ng-template>

@@ -1,7 +1,8 @@
 import {enableProdMode, importProvidersFrom} from '@angular/core';
 import {bootstrapApplication} from '@angular/platform-browser';
 import {provideRouter, withRouterConfig} from '@angular/router';
-import {provideHttpClient} from '@angular/common/http';
+import {provideHttpClient, withInterceptors} from '@angular/common/http';
+import {loadingInterceptor} from './app/shared/interceptors/loading.interceptor';
 import {provideAnimations} from '@angular/platform-browser/animations';
 import {ToastrModule} from 'ngx-toastr';
 import {registerLocaleData} from '@angular/common';
@@ -20,7 +21,7 @@ if (environment.production) {
 bootstrapApplication(AppComponent, {
   providers: [
     provideRouter(routes, withRouterConfig({onSameUrlNavigation: 'reload'})),
-    provideHttpClient(),
+    provideHttpClient(withInterceptors([loadingInterceptor])),
     provideAnimations(),
     importProvidersFrom(ToastrModule.forRoot()),
   ],
