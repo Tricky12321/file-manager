@@ -68,8 +68,11 @@ public static class Extensions
 
             return fi;
         }).ToList();
+        // Match the requested root exactly (with a trailing separator) so that e.g.
+        // "/torrent/TV" does not also capture files under "/torrent/TV-link".
+        var rootPrefix = directoryPath.TrimEnd('/') + "/";
         return result
-            .Where(x => x.FolderPath != null && x.FolderPath.StartsWith(directoryPath))
+            .Where(x => x.Path != null && x.Path.StartsWith(rootPrefix))
             .Where(file => (hardlink == null || file.IsHardlink == hardlink)
                            && (inQbit == null || file.InQbit == inQbit)
                            && (folderInQbit == null || file.FolderInQbit == folderInQbit)

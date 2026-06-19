@@ -13,5 +13,6 @@ export interface FileInfo {
   selected: boolean;
   hashDuplicate: boolean;
   isSample: boolean;
+  inBoth: boolean;
   torrentPath: string;
 }

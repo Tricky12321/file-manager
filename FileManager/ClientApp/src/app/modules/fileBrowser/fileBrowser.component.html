@@ -112,6 +112,7 @@
         <th data-column-key="IsHardlink">Hardlink</th>
         <th data-column-key="InQbit">In Qbit</th>
         <th data-column-key="FolderInQbit">Folder in Qbit</th>
+        <th data-column-key="InBoth">In both</th>
         <th data-column-key="HashDuplicate">Hash Duplicate</th>
         <th data-column-key="Hash">Hash</th>
         <th></th>
@@ -140,6 +141,10 @@
           @if (fileInfo.torrentPath != null && fileInfo.torrentPath != "") {
             <i class="fa fa-info-circle text-info ms-2" [title]="fileInfo.torrentPath"></i>
           }
+        </td>
+        <td [attr.data-sort]="fileInfo.inBoth">
+          <i class="fa" [class.text-success]="fileInfo.inBoth" [class.fa-check]="fileInfo.inBoth"
+             [class.text-danger]="!fileInfo.inBoth" [class.fa-times]="!fileInfo.inBoth"></i>
         </td>
         <td [attr.data-sort]="fileInfo.hashDuplicate">
           <i class="fa" [class.text-success]="!fileInfo.hashDuplicate" [class.fa-times]="!fileInfo.hashDuplicate"

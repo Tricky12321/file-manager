@@ -10,6 +10,8 @@ export const routes: Routes = [
   {path: 'qbfiles', component: QbitfilesComponent},
   {path: 'files/tv', component: FileBrowserComponent, data: {scanPath: '/torrent/TV', mode: 'files'}},
   {path: 'files/film', component: FileBrowserComponent, data: {scanPath: '/torrent/Film', mode: 'files'}},
+  {path: 'files/tv-link', component: FileBrowserComponent, data: {scanPath: '/torrent/TV-link', mode: 'files'}},
+  {path: 'files/film-link', component: FileBrowserComponent, data: {scanPath: '/torrent/Film-link', mode: 'files'}},
   {path: 'samples/tv', component: FileBrowserComponent, data: {scanPath: '/torrent/TV-link', mode: 'samples'}},
   {path: 'samples/film', component: FileBrowserComponent, data: {scanPath: '/torrent/Film-link', mode: 'samples'}},
   {path: 'directories/tv', component: FileBrowserComponent, data: {scanPath: '/torrent/TV', mode: 'folders'}},

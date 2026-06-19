@@ -21,6 +21,9 @@ public class FileInfo
     public bool FolderInQbit { get; set; }
     public bool HashDuplicate { get; set; }
     public bool IsSample { get; set; }
+    // True when this file's inode also exists under the paired folder (main <-> link),
+    // i.e. the file is hardlinked into both the main library and its -link folder.
+    public bool InBoth { get; set; }
     public string TorrentPath { get; set; }
 
     public bool Selected { get; set; }

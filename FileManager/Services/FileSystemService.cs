@@ -31,6 +31,17 @@ public class FileSystemService
         "/torrent/Film",
     };
 
+    // Each main library folder paired with its hardlink folder. A file is "in both" when
+    // the same inode appears under both sides of a pair.
+    private static readonly (string main, string link)[] LinkPairs = new[]
+    {
+        ("/torrent/TV", "/torrent/TV-link"),
+        ("/torrent/Film", "/torrent/Film-link"),
+    };
+
+    // All roots scanned into the shared inode map (main folders + their link folders).
+    private string[] AllScanFolders => ScanFolders.Concat(LinkPairs.Select(p => p.link)).ToArray();
+
     public FileSystemService(QBittorrentService qBittorrentService)
     {
         _qbittorrentService = qBittorrentService;
@@ -159,12 +170,14 @@ public class FileSystemService
                     .FilterResults(directoryPath, hardlink, inQbit, folderInQbit, hashDuplicate);
             }
 
-            List<FileInfo> result = new List<FileInfo>();
-            foreach (var folder in ScanFolders)
+            // Collect inodes across all roots first, then flatten once. A single shared map
+            // lets us detect hardlinks across roots and the main<->link pairing.
+            foreach (var folder in AllScanFolders)
             {
-                result.AddRange(ScanFilesInPath(folder, inodeMap, qbitAllFiles, ref scanned, hashCheck));
+                CollectInodes(folder, inodeMap, ref scanned);
             }
 
+            List<FileInfo> result = FlattenInodes(inodeMap, qbitAllFiles, hashCheck);
 
             Console.WriteLine("Caching file scan results to " + cachePath);
             Console.WriteLine("Total results: " + result.Count);
@@ -181,10 +194,14 @@ public class FileSystemService
         }
     }
 
-    private static List<FileInfo> ScanFilesInPath(string directoryPath, Dictionary<(ulong dev, ulong ino), List<(string path, long size)>> inodeMap, List<string> qbitAllFiles, ref int scanned,
-        bool hashCheck = false)
+    // Walk a root and record each file's (dev, ino) + on-disk size into the shared map.
+    private static void CollectInodes(string directoryPath, Dictionary<(ulong dev, ulong ino), List<(string path, long size)>> inodeMap, ref int scanned)
     {
-        // Step 1: Scan all files and collect size + inode
+        if (!Directory.Exists(directoryPath))
+        {
+            return;
+        }
+
         foreach (var file in Directory.EnumerateFiles(directoryPath, "*", SearchOption.AllDirectories))
         {
             try
@@ -197,7 +214,6 @@ public class FileSystemService
                         inodeMap[key] = new List<(string, long)>();
                     }
 
-                    // Get the disk size of the file
                     var diskSize = file.GetFileSize();
                     inodeMap[key].Add((file, diskSize));
                     scanned++;
@@ -210,26 +226,22 @@ public class FileSystemService
                 // skip unreadable files
             }
         }
+    }
 
-        // Step 2: Compute partial hash in parallel
+    // Flatten the inode map to FileInfo, computing hardlink, hash, qbit and main<->link pairing.
+    private static List<FileInfo> FlattenInodes(Dictionary<(ulong dev, ulong ino), List<(string path, long size)>> inodeMap, List<string> qbitAllFiles, bool hashCheck)
+    {
         var inodeHashes = new ConcurrentDictionary<(ulong dev, ulong ino), string>();
-        var inodeList = new List<(ulong dev, ulong ino, List<(string path, long size)> files)>();
-        foreach (var kv in inodeMap)
-        {
-            inodeList.Add((kv.Key.dev, kv.Key.ino, kv.Value));
-        }
-
-        int totalInodes = inodeList.Count;
-        int processedInodes = 0;
-        var lockObj = new object();
         if (hashCheck)
         {
+            var inodeList = inodeMap.Select(kv => (kv.Key, kv.Value)).ToList();
+            int totalInodes = inodeList.Count;
+            int processedInodes = 0;
+            var lockObj = new object();
             Parallel.ForEach(inodeList, inodeEntry =>
             {
-                var firstFile = inodeEntry.files[0];
-                string hash = ComputePartialHash(firstFile.path, 1024 * 1024 * 8); // 8 MB
-                var key = (inodeEntry.dev, inodeEntry.ino);
-                inodeHashes[key] = hash;
+                var firstFile = inodeEntry.Value[0];
+                inodeHashes[inodeEntry.Key] = ComputePartialHash(firstFile.path, 1024 * 1024 * 8); // 8 MB
 
                 lock (lockObj)
                 {
@@ -243,12 +255,17 @@ public class FileSystemService
             });
         }
 
-        // Step 3: Flatten to FileInfo
         var result = new List<FileInfo>();
         foreach (var kv in inodeMap)
         {
             bool isHardlink = kv.Value.Count > 1;
             string inodeId = $"{kv.Key.dev}:{kv.Key.ino}";
+
+            // An inode is "in both" when, for some pair, it has a path under the main folder
+            // and a path under that pair's link folder.
+            bool inBoth = LinkPairs.Any(pair =>
+                kv.Value.Any(f => f.path.StartsWith(pair.main + "/")) &&
+                kv.Value.Any(f => f.path.StartsWith(pair.link + "/")));
 
             foreach (var (path, size) in kv.Value)
             {
@@ -259,6 +276,7 @@ public class FileSystemService
                     IsHardlink = isHardlink,
                     Size = size,
                     PartialHash = hashCheck ? inodeHashes[kv.Key] : string.Empty,
+                    InBoth = inBoth,
                     InQbit = qbitAllFiles.Any(qb => qb == path),
                     FolderInQbit =
                         qbitAllFiles.Any(qb => qb.StartsWith(System.IO.Path.GetDirectoryName(path) ?? "")),
