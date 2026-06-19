@@ -203,9 +203,15 @@ export class SimpleTableComponent implements AfterViewInit {
     };
     this.http.post<TableResult<any>>(this.url, request).subscribe({
       next: (result: TableResult<any>) => {
-        this.data = result.items;
         this.totalItemCount = result.totalCount;
         this.totalPages = Math.max(1, Math.ceil(result.totalCount / this.pageSize));
+        // If the result set shrank below the current page (e.g. after filtering), clamp and refetch.
+        if (this.currentPage > this.totalPages) {
+          this.currentPage = this.totalPages;
+          this.fetchServerData();
+          return;
+        }
+        this.data = result.items;
         this.startIndex = (this.currentPage - 1) * this.pageSize + 1;
         this.endIndex = Math.min(this.startIndex - 1 + this.pageSize, this.totalItemCount);
         this.isLoading = false;

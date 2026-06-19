@@ -55,6 +55,9 @@ public static class Extensions
             }
         }
 
+        // Count after the search filter (the basis for pagination), before sorting/paging.
+        var filteredCount = query.Count();
+
         if (!string.IsNullOrWhiteSpace(tableRequest.SortColumn))
         {
             var prop = typeof(T).GetProperty(tableRequest.SortColumn, BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
@@ -75,7 +78,7 @@ public static class Extensions
         return new TableResult<T>
         {
             Items = query.ToList(),
-            TotalCount = totalResults
+            TotalCount = filteredCount
         };
     }
 
@@ -126,14 +129,17 @@ public static class Extensions
             }
         }
 
-        // ========= PAGINATION (LINQ-to-Objects) =========
+        // Count after search/sort (the set the user is actually paging through), then page.
+        var filtered = query.ToList();
+        var filteredCount = filtered.Count;
+
         var skip = (tableRequest.PageNumber - 1) * tableRequest.PageSize;
-        query = query.Skip(skip).Take(tableRequest.PageSize);
+        var items = filtered.Skip(skip).Take(tableRequest.PageSize).ToList();
 
         return new TableResult<T>
         {
-            Items = query.ToList(),
-            TotalCount = totalResults
+            Items = items,
+            TotalCount = filteredCount
         };
     }
 
