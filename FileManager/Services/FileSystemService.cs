@@ -304,7 +304,7 @@ public class FileSystemService
         }
     }
 
-    public async Task DeleteFile(string path, string directoryPath)
+    public async Task DeleteFile(string path, string? directoryPath)
     {
         if (path.IsNullOrWhitespace())
         {
@@ -483,7 +483,7 @@ public class FileSystemService
         return false;
     }
 
-    private async Task RemoveFileFromCache(string path, string directoryPath)
+    private async Task RemoveFileFromCache(string path, string? directoryPath)
     {
         foreach (var cachePath in new[] { FileCacheFile, HashCacheFile })
         {
@@ -538,7 +538,7 @@ public class FileSystemService
         await _qbittorrentService.UpdateAllFilesCacheAsync(qbitAllFiles).ConfigureAwait(false);
     }
 
-    public async Task DeleteMultipleFiles(List<string> deleteMultiple, string folderPath)
+    public async Task DeleteMultipleFiles(List<string> deleteMultiple, string? folderPath)
     {
         foreach (var deleteFile in deleteMultiple)
         {

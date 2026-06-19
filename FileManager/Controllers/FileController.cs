@@ -50,14 +50,14 @@ public class FileController : ControllerBase
     }
 
     [HttpPost("delete")]
-    public async Task<IActionResult> DeleteFile([FromBody] DeleteFileDto deleteFileDto, [FromQuery] string folderPath)
+    public async Task<IActionResult> DeleteFile([FromBody] DeleteFileDto deleteFileDto, [FromQuery] string? folderPath = null)
     {
         await _fileSystemService.DeleteFile(deleteFileDto.Path, folderPath);
         return Ok();
     }
 
     [HttpPost("deleteMultiple")]
-    public async Task<IActionResult> DeleteFile([FromBody] List<string> deleteMultiple, [FromQuery] string folderPath)
+    public async Task<IActionResult> DeleteFile([FromBody] List<string> deleteMultiple, [FromQuery] string? folderPath = null)
     {
         await _fileSystemService.DeleteMultipleFiles(deleteMultiple, folderPath);
         return Ok();
