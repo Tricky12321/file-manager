@@ -26,16 +26,15 @@ public sealed class QbittorrentClient : IDisposable
         };
         _username = username;
         _password = password;
+        _useBasicAuth = useBasicAuth;
 
         _http = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(30) };
         _http.BaseAddress = _baseUri;
-        
     }
 
-    /// <summary>For cookie-based auth (qBittorrent default). No-op if using Basic auth.</summary>
+    /// <summary>For cookie-based auth (qBittorrent default). No-op if using Basic auth (the host-whitelisted LAN default).</summary>
     public async Task AuthenticateAsync()
     {
-        return;
         if (_useBasicAuth || _authenticated) return;
 
         using var content = new FormUrlEncodedContent(new[]

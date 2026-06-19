@@ -1,4 +1,4 @@
-﻿FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 RUN apt-get update -yq \
     && apt-get install curl gnupg -yq \
     && curl -sL https://deb.nodesource.com/setup_24.x | bash \
@@ -8,7 +8,7 @@ WORKDIR /app
 EXPOSE 80
 EXPOSE 443
 
-FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 RUN apt-get update -yq \
     && apt-get install curl gnupg -yq \
     && curl -sL https://deb.nodesource.com/setup_24.x | bash \
@@ -17,20 +17,18 @@ RUN apt-get update -yq \
 RUN npm install --global yarn
 WORKDIR /src
 COPY ["FileManager/FileManager.csproj", "FileManager/"]
+COPY ["SimpleTable/SimpleTable.csproj", "SimpleTable/"]
 RUN dotnet restore "FileManager/FileManager.csproj"
 COPY . .
 WORKDIR /src/FileManager
-RUN dotnet build "FileManager.csproj" -c Release -o /app/build
 RUN dotnet publish "FileManager.csproj" -c Release -o /app/publish
-FROM build AS publish
 
-COPY --from=build /app/publish .
 FROM base AS final
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
 WORKDIR /app
 
-COPY --from=publish /app/publish .
+COPY --from=build /app/publish .
 RUN cp -R /app/ClientApp/dist/browser /app/wwwroot
 RUN mkdir /qbit_data
 CMD ["dotnet", "FileManager.dll"]

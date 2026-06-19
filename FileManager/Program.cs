@@ -14,11 +14,6 @@ namespace FileManager
 
         private static IWebHostBuilder CreateWebHostBuilder(string[] args)
         {
-            if (Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") == Environments.Development || Environment.GetEnvironmentVariable("USE_DEV_SITE") == "true")
-            {
-                return WebHost.CreateDefaultBuilder(args).UseStartup<Startup>().UseKestrel(options => { options.Limits.MaxRequestBodySize = 524288000; });
-            }
-
             return WebHost.CreateDefaultBuilder(args)
                 .UseStartup<Startup>()
                 .UseKestrel(options => { options.Limits.MaxRequestBodySize = 524288000; });

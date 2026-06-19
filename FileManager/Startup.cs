@@ -78,28 +78,13 @@ namespace FileManager
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
         public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
         {
+            // Single-user LAN tool: the developer exception page is intentionally always on
+            // so failures are visible. HSTS only makes sense behind the dev/proxy setup.
+            app.UseDeveloperExceptionPage();
             if (env.IsDevelopment() || Environment.GetEnvironmentVariable("USE_DEV_SITE") == "true")
             {
-                app.UseDeveloperExceptionPage();
                 app.UseHsts();
             }
-            else
-            {
-                app.UseDeveloperExceptionPage();
-            }
-
-            /*using (var scope = app.ApplicationServices.CreateScope())
-            {
-                try
-                {
-                    FeatureLoggerSeeder.SeedAsync(scope.ServiceProvider)
-                        .GetAwaiter().GetResult();
-                }
-                catch (Exception ex)
-                {
-                    Console.Error.WriteLine($"FeatureLogger seeding failed: {ex}");
-                }
-            }*/
 
             app.UseSpaStaticFiles();
             app.UseStaticFiles();
@@ -142,7 +127,7 @@ namespace FileManager
                 {
                     spa.Options.DefaultPageStaticFileOptions = new StaticFileOptions
                     {
-                        OnPrepareResponse = context => { context.Context.Response.Headers.Add("Cache-Control", "max-age=3000, must-revalidate"); }
+                        OnPrepareResponse = context => { context.Context.Response.Headers["Cache-Control"] = "max-age=3000, must-revalidate"; }
                     };
                 }
             });
