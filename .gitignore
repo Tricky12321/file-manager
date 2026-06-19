@@ -1,3 +1,12 @@
 .idea
 .claude
 .vscode
+
+# Build output
+[Bb]in/
+[Oo]bj/
+
+# SQLite artifacts
+*.db
+*.db-shm
+*.db-wal

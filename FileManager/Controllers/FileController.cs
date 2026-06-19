@@ -1,7 +1,10 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using FileManager.Models;
 using FileManager.Services;
 using Microsoft.AspNetCore.Mvc;
+using SimpleTable;
+using SimpleTable.Models;
 
 namespace FileManager.Controllers;
 
@@ -17,69 +20,67 @@ public class FileController : ControllerBase
     }
 
     [HttpGet("getFiles")]
-    public IActionResult GetFiles([FromQuery] string path, [FromQuery] bool? hardlink = null,
+    public async Task<IActionResult> GetFiles([FromQuery] string path, [FromQuery] bool? hardlink = null,
         [FromQuery] bool? inQbit = null, [FromQuery] bool? folderInQbit = null, [FromQuery] bool? hashDuplicate = null,
         [FromQuery] bool? clearCache = null)
     {
-        return Ok(_fileSystemService.GetFilesInDirectory(path, hardlink, inQbit, folderInQbit, hashDuplicate, clearCache == true));
+        return Ok(await _fileSystemService.GetFilesInDirectory(path, hardlink, inQbit, folderInQbit, hashDuplicate, clearCache == true));
     }
 
     [HttpPost("getFilesPost")]
-    public IActionResult GetFilesPost([FromBody] TableRequestDto tableRequest, [FromQuery] string path,
+    public async Task<IActionResult> GetFilesPost([FromBody] TableRequest tableRequest, [FromQuery] string path,
         [FromQuery] bool? hardlink = null, [FromQuery] bool? inQbit = null, [FromQuery] bool? folderInQbit = null,
         [FromQuery] bool? hashDuplicate = null, [FromQuery] bool? clearCache = null)
     {
-        var results = _fileSystemService.GetFilesInDirectory(path, hardlink, inQbit, folderInQbit, hashDuplicate, clearCache == true)
-            .ToTableResponse(tableRequest);
-        return Ok(results);
+        var files = await _fileSystemService.GetFilesInDirectory(path, hardlink, inQbit, folderInQbit, hashDuplicate, clearCache == true);
+        return Ok(files.ToTableResponse(tableRequest));
     }
 
     [HttpGet("getFolders")]
-    public IActionResult GetFolder([FromQuery] string path, [FromQuery] bool? folderInQbit = null, [FromQuery] bool? clearCache = null)
+    public async Task<IActionResult> GetFolder([FromQuery] string path, [FromQuery] bool? folderInQbit = null, [FromQuery] bool? clearCache = null)
     {
-        return Ok(_fileSystemService.GetDirectoriesInDirectory(path, folderInQbit, clearCache == true));
+        return Ok(await _fileSystemService.GetDirectoriesInDirectory(path, folderInQbit, clearCache == true));
     }
 
     [HttpPost("getFoldersPost")]
-    public IActionResult GetFoldersPost([FromBody] TableRequestDto tableRequest, [FromQuery] string path, [FromQuery] bool? folderInQbit = null, [FromQuery] bool? clearCache = null)
+    public async Task<IActionResult> GetFoldersPost([FromBody] TableRequest tableRequest, [FromQuery] string path, [FromQuery] bool? folderInQbit = null, [FromQuery] bool? clearCache = null)
     {
-        var results = _fileSystemService.GetDirectoriesInDirectory(path, folderInQbit, clearCache == true)
-            .ToTableResponse(tableRequest);
-        return Ok(results);
+        var folders = await _fileSystemService.GetDirectoriesInDirectory(path, folderInQbit, clearCache == true);
+        return Ok(folders.ToTableResponse(tableRequest));
     }
 
     [HttpPost("delete")]
-    public IActionResult DeleteFile([FromBody] DeleteFileDto deleteFileDto, [FromQuery] string folderPath)
+    public async Task<IActionResult> DeleteFile([FromBody] DeleteFileDto deleteFileDto, [FromQuery] string folderPath)
     {
-        _fileSystemService.DeleteFile(deleteFileDto.Path, folderPath);
+        await _fileSystemService.DeleteFile(deleteFileDto.Path, folderPath);
         return Ok();
     }
 
     [HttpPost("deleteMultiple")]
-    public IActionResult DeleteFile([FromBody] List<string> deleteMultiple, [FromQuery] string folderPath)
+    public async Task<IActionResult> DeleteFile([FromBody] List<string> deleteMultiple, [FromQuery] string folderPath)
     {
-        _fileSystemService.DeleteMultipleFiles(deleteMultiple, folderPath);
+        await _fileSystemService.DeleteMultipleFiles(deleteMultiple, folderPath);
         return Ok();
     }
 
     [HttpPost("getEmptyFolders")]
-    public IActionResult GetEmptyFolders([FromBody] TableRequestDto tableRequest, [FromQuery] string path)
+    public IActionResult GetEmptyFolders([FromBody] TableRequest tableRequest, [FromQuery] string path)
     {
         return Ok(_fileSystemService.GetEmptyFolders(path).ToTableResponse(tableRequest));
     }
 
     [HttpPost("getSmallFolders")]
-    public IActionResult GetSmallFolders([FromBody] TableRequestDto tableRequest, [FromQuery] string path)
+    public IActionResult GetSmallFolders([FromBody] TableRequest tableRequest, [FromQuery] string path)
     {
         return Ok(_fileSystemService.GetSmallFolders(path).ToTableResponse(tableRequest));
     }
 
     [HttpPost("deleteFolders")]
-    public IActionResult DeleteFolders([FromBody] List<string> foldersToDelete)
+    public async Task<IActionResult> DeleteFolders([FromBody] List<string> foldersToDelete)
     {
         foreach (var folder in foldersToDelete)
         {
-            _fileSystemService.DeleteFolder(folder);
+            await _fileSystemService.DeleteFolder(folder);
         }
 
         return Ok();

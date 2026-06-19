@@ -42,67 +42,6 @@ public static class Extensions
         }
     }
 
-    public static TableResult<T> ToTableResponse<T>(this List<T> results, TableRequestDto tableRequest = null)
-    {
-        var totalResults = results.Count;
-        if (tableRequest == null)
-        {
-            tableRequest = new TableRequestDto()
-            {
-                PageNumber = 1,
-                PageSize = totalResults,
-                Search = string.Empty,
-                SortColumn = null,
-                SortDirection = "asc"
-            };
-        }
-
-        // Apply search filter
-        if (!string.IsNullOrWhiteSpace(tableRequest.Search))
-        {
-            // Search all fields that are strings or can be cast to string, should use reflection to do this
-            results = results.Where(r =>
-            {
-                var properties = r.GetType().GetProperties();
-                foreach (var prop in properties)
-                {
-                    if (prop.PropertyType == typeof(string) || prop.PropertyType.IsValueType)
-                    {
-                        var value = prop.GetValue(r)?.ToString();
-                        if (value != null && value.Contains(tableRequest.Search, StringComparison.OrdinalIgnoreCase))
-                        {
-                            return true;
-                        }
-                    }
-                }
-
-                return false;
-            }).ToList();
-        }
-
-
-        // Apply sorting
-        if (tableRequest.SortColumn != null)
-        {
-            //Extensions.GetPropertyValues(results.First());
-            results = tableRequest.SortDirection == "desc"
-                ? results.OrderByDescending(r => { return r.GetType().GetProperty(tableRequest.SortColumn)?.GetValue(r); }).ToList()
-                : results.OrderBy(r => { return r.GetType().GetProperty(tableRequest.SortColumn)?.GetValue(r); }).ToList();
-        }
-
-        // Apply pagination
-        var outputResults = results.Skip((tableRequest.PageNumber - 1) * tableRequest.PageSize)
-            .Take(tableRequest.PageSize)
-            .ToList();
-        var output = new TableResult<T>()
-        {
-            Items = outputResults,
-            FilteredCount = results.Count,
-            TotalCount = totalResults,
-        };
-        return output;
-    }
-
     public static string Sha1Hash(this string input)
     {
         if (input == null)

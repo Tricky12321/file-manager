@@ -47,9 +47,6 @@ namespace FileManager
                 options.RequestCultureProviders.Clear();
             });
             
-            //Add automapper used to convert db models to dto
-            services.AddAutoMapper(typeof(Startup));
-
             //Access header
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
 

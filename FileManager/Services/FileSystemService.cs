@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Threading;
 using System.Threading.Tasks;
 using DocumentFormat.OpenXml.Office2010.ExcelAc;
 using FileManager.Models;
@@ -18,7 +19,8 @@ namespace FileManager.Services;
 public class FileSystemService
 {
     private readonly QBittorrentService _qbittorrentService;
-    private static object _lockObj = new object();
+    // Serializes the file-scan/cache critical section. SemaphoreSlim allows awaiting inside it.
+    private static readonly SemaphoreSlim _scanGate = new SemaphoreSlim(1, 1);
 
     private const string FileCacheFile = "/qbit_data/file_cache.json";
     private const string HashCacheFile = "/qbit_data/file_cache_hash.json";
@@ -61,21 +63,9 @@ public class FileSystemService
         public long __unused5;
     }
 
-    public List<FileInfo> GetFilesInDirectories(List<string> directories)
+    public async Task<List<FileInfo>> GetDirectoriesInDirectory(string directoryPath, bool? folderInQbit = null, bool clearCache = false)
     {
-        var output = new List<FileInfo>();
-        foreach (var dir in directories)
-        {
-            var files = GetFilesInDirectory(dir);
-            output.AddRange(files);
-        }
-
-        return output;
-    }
-
-    public List<FileInfo> GetDirectoriesInDirectory(string directoryPath, bool? folderInQbit = null, bool clearCache = false)
-    {
-        var qbittorrentFiles = _qbittorrentService.GetTorrentList(clearCache).GetAwaiter().GetResult();
+        var qbittorrentFiles = await _qbittorrentService.GetTorrentList(clearCache).ConfigureAwait(false);
         var fileInfos = new List<FileInfo>();
         foreach (var dir in Directory.EnumerateDirectories(directoryPath, "*", SearchOption.AllDirectories))
         {
@@ -133,50 +123,17 @@ public class FileSystemService
         }
 
         return fileInfos;
-        /*
-
-        var fileInfos = new List<FileInfo>();
-        var qbittorrentFiles = _qbittorrentService.GetTorrentList(clearCache).GetAwaiter().GetResult();
-        Console.WriteLine("Scanning for folders in " + directoryPath);
-        var folders = Directory.EnumerateDirectories(directoryPath, "*", SearchOption.AllDirectories);
-        Console.WriteLine("Found " + folders.Count() + " folders");
-        foreach (var dir in Directory.EnumerateDirectories(directoryPath, "*", SearchOption.AllDirectories))
-        {
-            fileInfos.Add(new FileInfo()
-            {
-                Path = dir,
-                Size = dir.Length,
-                FolderInQbit = qbittorrentFiles.Any(x => x.ContentPath.StartsWith(dir))
-            });
-        }
-
-        Console.WriteLine("Folder scan complete, found " + fileInfos.Count + " folders");
-        return fileInfos;
-        List<FileInfo> files = GetFilesInDirectory(directoryPath, null, null, folderInQbit, null, clearCache);
-        var grouped = files.GroupBy(f => f.FolderPath);
-        var folders = new List<DirectoryInfo>();
-        foreach (var group in grouped)
-        {
-            folders.Add(new DirectoryInfo()
-            {
-                Path = group.Key,
-                FileCount = group.Count(),
-                FolderInQbit = group.Any(f => f.FolderInQbit),
-                Size = group.Sum(f => f.Size)
-            });
-        }
-        return folders;
-        */
     }
 
-    public List<FileInfo> GetFilesInDirectory(string directoryPath, bool? hardlink = null, bool? inQbit = null, bool? folderInQbit = null, bool? hashDuplicate = null, bool clearCache = false)
+    public async Task<List<FileInfo>> GetFilesInDirectory(string directoryPath, bool? hardlink = null, bool? inQbit = null, bool? folderInQbit = null, bool? hashDuplicate = null, bool clearCache = false)
     {
-        var qbitFiles = _qbittorrentService.GetTorrentList(clearCache).GetAwaiter().GetResult();
-        var qbitAllFiles = _qbittorrentService.GetTorrentFiles(qbitFiles, clearCache).GetAwaiter().GetResult();
+        var qbitFiles = await _qbittorrentService.GetTorrentList(clearCache).ConfigureAwait(false);
+        var qbitAllFiles = await _qbittorrentService.GetTorrentFiles(qbitFiles, clearCache).ConfigureAwait(false);
         var inodeMap = new Dictionary<(ulong dev, ulong ino), List<(string path, long size)>>();
         int scanned = 0;
 
-        lock (_lockObj)
+        await _scanGate.WaitAsync().ConfigureAwait(false);
+        try
         {
             // Hashing is expensive (8 MB read per inode), so only compute partial hashes
             // when the caller actually wants to filter on duplicates. Hashed and non-hashed
@@ -217,6 +174,10 @@ public class FileSystemService
             File.WriteAllText(cachePath, JsonConvert.SerializeObject(result));
             result = result.FilterResults(directoryPath, hardlink, inQbit, folderInQbit, hashDuplicate);
             return result;
+        }
+        finally
+        {
+            _scanGate.Release();
         }
     }
 
@@ -325,7 +286,7 @@ public class FileSystemService
         }
     }
 
-    public void DeleteFile(string path, string directoryPath)
+    public async Task DeleteFile(string path, string directoryPath)
     {
         if (path.IsNullOrWhitespace())
         {
@@ -344,19 +305,19 @@ public class FileSystemService
             Console.WriteLine($"Deleting file {path}");
             File.Delete(path);
             Console.WriteLine($"Deleted file {path}");
-            RemoveFileFromCache(path, directoryPath);
+            await RemoveFileFromCache(path, directoryPath).ConfigureAwait(false);
             return;
         }
         else
         {
             Console.WriteLine("File not found: " + path);
-            RemoveFileFromCache(path, directoryPath);
+            await RemoveFileFromCache(path, directoryPath).ConfigureAwait(false);
         }
 
         throw new FileNotFoundException($"File {path} not found.");
     }
 
-    public void DeleteFolder(string folderPath)
+    public async Task DeleteFolder(string folderPath)
     {
         if (folderPath.IsNullOrWhitespace())
         {
@@ -374,7 +335,7 @@ public class FileSystemService
         {
             Console.WriteLine($"Deleting folder {folderPath}");
             Directory.Delete(folderPath, true);
-            RemoveFolderFromCache(folderPath);
+            await RemoveFolderFromCache(folderPath).ConfigureAwait(false);
             Console.WriteLine($"Deleted folder {folderPath}");
             return;
         }
@@ -449,7 +410,7 @@ public class FileSystemService
         return fileInfos;
     }
 
-    private void RemoveFileFromCache(string path, string directoryPath)
+    private async Task RemoveFileFromCache(string path, string directoryPath)
     {
         foreach (var cachePath in new[] { FileCacheFile, HashCacheFile })
         {
@@ -458,12 +419,12 @@ public class FileSystemService
                 continue;
             }
 
-            var cached = JsonConvert.DeserializeObject<List<FileInfo>>(File.ReadAllText(cachePath))
+            var cached = JsonConvert.DeserializeObject<List<FileInfo>>(await File.ReadAllTextAsync(cachePath).ConfigureAwait(false))
                 .Where(f => f.Path != path).ToList();
-            File.WriteAllText(cachePath, JsonConvert.SerializeObject(cached));
+            await File.WriteAllTextAsync(cachePath, JsonConvert.SerializeObject(cached)).ConfigureAwait(false);
         }
 
-        var qbitAllFiles = _qbittorrentService.GetTorrentFiles(null).GetAwaiter().GetResult();
+        var qbitAllFiles = await _qbittorrentService.GetTorrentFiles(null).ConfigureAwait(false);
         var qbitFile = qbitAllFiles.FirstOrDefault(f => f == path);
         if (qbitFile != null)
         {
@@ -472,10 +433,10 @@ public class FileSystemService
 
         // Update qBittorrent cache
         Console.WriteLine($"Updating qBittorrent cache after deleting file {path}");
-        _qbittorrentService.UpdateAllFilesCache(qbitAllFiles);
+        await _qbittorrentService.UpdateAllFilesCacheAsync(qbitAllFiles).ConfigureAwait(false);
     }
 
-    private void RemoveFolderFromCache(string directoryPath)
+    private async Task RemoveFolderFromCache(string directoryPath)
     {
         foreach (var cachePath in new[] { FileCacheFile, HashCacheFile })
         {
@@ -484,12 +445,12 @@ public class FileSystemService
                 continue;
             }
 
-            var cached = JsonConvert.DeserializeObject<List<FileInfo>>(File.ReadAllText(cachePath))
+            var cached = JsonConvert.DeserializeObject<List<FileInfo>>(await File.ReadAllTextAsync(cachePath).ConfigureAwait(false))
                 .Where(f => !f.Path.StartsWith(directoryPath)).ToList();
-            File.WriteAllText(cachePath, JsonConvert.SerializeObject(cached));
+            await File.WriteAllTextAsync(cachePath, JsonConvert.SerializeObject(cached)).ConfigureAwait(false);
         }
 
-        var qbitAllFiles = _qbittorrentService.GetTorrentFiles(null).GetAwaiter().GetResult();
+        var qbitAllFiles = await _qbittorrentService.GetTorrentFiles(null).ConfigureAwait(false);
         var qbitFile = qbitAllFiles.Where(f => f.StartsWith(directoryPath)).ToList();
         if (qbitFile.Any())
         {
@@ -501,28 +462,21 @@ public class FileSystemService
 
         // Update qBittorrent cache
         Console.WriteLine($"Updating qBittorrent cache after deleting folder {directoryPath}");
-        _qbittorrentService.UpdateAllFilesCache(qbitAllFiles);
+        await _qbittorrentService.UpdateAllFilesCacheAsync(qbitAllFiles).ConfigureAwait(false);
     }
 
-    public void DeleteMultipleFiles(List<string> deleteMultiple, string folderPath)
+    public async Task DeleteMultipleFiles(List<string> deleteMultiple, string folderPath)
     {
-        try
+        foreach (var deleteFile in deleteMultiple)
         {
-            foreach (var deleteFile in deleteMultiple)
+            try
             {
-                try
-                {
-                    DeleteFile(deleteFile, folderPath);
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e);
-                }
+                await DeleteFile(deleteFile, folderPath).ConfigureAwait(false);
             }
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine(e);
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+            }
         }
     }
 }
