@@ -140,11 +140,6 @@ public static class Extensions
             ).ToList();
     }
 
-    public static bool IsFile(this string path)
-    {
-        FileAttributes attr = File.GetAttributes(@"c:\Temp");
-        return !attr.HasFlag(FileAttributes.Directory);
-    }
     public static bool IsDirectory(this string path)
     {
         try

@@ -20,6 +20,9 @@ public class FileSystemService
     private readonly QBittorrentService _qbittorrentService;
     private static object _lockObj = new object();
 
+    private const string FileCacheFile = "/qbit_data/file_cache.json";
+    private const string HashCacheFile = "/qbit_data/file_cache_hash.json";
+
     private string[] ScanFolders = new string[]
     {
         "/torrent/TV",
@@ -175,13 +178,21 @@ public class FileSystemService
 
         lock (_lockObj)
         {
-            // sha1 hash the directory path for cache
-            var cachePath = "/qbit_data/file_cache.json";
+            // Hashing is expensive (8 MB read per inode), so only compute partial hashes
+            // when the caller actually wants to filter on duplicates. Hashed and non-hashed
+            // scans are cached separately so the two result sets never overwrite each other.
+            var hashCheck = hashDuplicate != null;
+            var cachePath = hashCheck ? HashCacheFile : FileCacheFile;
+
+            // A cache clear should invalidate both variants so a refresh is consistent.
             if (clearCache)
             {
-                if (File.Exists(cachePath))
+                foreach (var cache in new[] { FileCacheFile, HashCacheFile })
                 {
-                    File.Delete(cachePath);
+                    if (File.Exists(cache))
+                    {
+                        File.Delete(cache);
+                    }
                 }
             }
 
@@ -194,7 +205,7 @@ public class FileSystemService
             List<FileInfo> result = new List<FileInfo>();
             foreach (var folder in ScanFolders)
             {
-                result.AddRange(ScanFilesInPath(folder, inodeMap, qbitAllFiles, ref scanned));
+                result.AddRange(ScanFilesInPath(folder, inodeMap, qbitAllFiles, ref scanned, hashCheck));
             }
 
 
@@ -440,11 +451,18 @@ public class FileSystemService
 
     private void RemoveFileFromCache(string path, string directoryPath)
     {
-        var cachePath = "/qbit_data/file_cache.json";
-        var data = JsonConvert.DeserializeObject<List<FileInfo>>(File.ReadAllText(cachePath));
-        // Remove from cache
-        data = data.Where(f => f.Path != path).ToList();
-        File.WriteAllText(cachePath, JsonConvert.SerializeObject(data));
+        foreach (var cachePath in new[] { FileCacheFile, HashCacheFile })
+        {
+            if (!File.Exists(cachePath))
+            {
+                continue;
+            }
+
+            var cached = JsonConvert.DeserializeObject<List<FileInfo>>(File.ReadAllText(cachePath))
+                .Where(f => f.Path != path).ToList();
+            File.WriteAllText(cachePath, JsonConvert.SerializeObject(cached));
+        }
+
         var qbitAllFiles = _qbittorrentService.GetTorrentFiles(null).GetAwaiter().GetResult();
         var qbitFile = qbitAllFiles.FirstOrDefault(f => f == path);
         if (qbitFile != null)
@@ -459,11 +477,18 @@ public class FileSystemService
 
     private void RemoveFolderFromCache(string directoryPath)
     {
-        var cachePath = "/qbit_data/file_cache.json";
-        var data = JsonConvert.DeserializeObject<List<FileInfo>>(File.ReadAllText(cachePath));
-        // Remove from cache
-        data = data.Where(f => !f.Path.StartsWith(directoryPath)).ToList();
-        File.WriteAllText(cachePath, JsonConvert.SerializeObject(data));
+        foreach (var cachePath in new[] { FileCacheFile, HashCacheFile })
+        {
+            if (!File.Exists(cachePath))
+            {
+                continue;
+            }
+
+            var cached = JsonConvert.DeserializeObject<List<FileInfo>>(File.ReadAllText(cachePath))
+                .Where(f => !f.Path.StartsWith(directoryPath)).ToList();
+            File.WriteAllText(cachePath, JsonConvert.SerializeObject(cached));
+        }
+
         var qbitAllFiles = _qbittorrentService.GetTorrentFiles(null).GetAwaiter().GetResult();
         var qbitFile = qbitAllFiles.Where(f => f.StartsWith(directoryPath)).ToList();
         if (qbitFile.Any())

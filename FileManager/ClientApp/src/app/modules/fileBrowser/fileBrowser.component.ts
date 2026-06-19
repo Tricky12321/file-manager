@@ -42,7 +42,8 @@ export class FileBrowserComponent implements OnInit {
     this.hardlinkFilter = localStorage.getItem("hardlink") == "null" ? null : (localStorage.getItem("hardlink") == "true");
     this.inQbitFilter = localStorage.getItem("inQbit") == "null" ? null : (localStorage.getItem("inQbit") == "true");
     this.folderInQbitFilter = localStorage.getItem("folderInQbit") == "null" ? null : (localStorage.getItem("folderInQbit") == "true");
-    this.needConfirm = localStorage.getItem("needConfirm") == "null" ? true : (localStorage.getItem("folderInQbit") == "true");
+    const needConfirmStored = localStorage.getItem("needConfirm");
+    this.needConfirm = needConfirmStored == null || needConfirmStored == "null" ? true : (needConfirmStored == "true");
     this.hashDuplicate = localStorage.getItem("hashDuplicate") == "null" ? null : (localStorage.getItem("hashDuplicate") == "true");
   }
 
@@ -136,7 +137,7 @@ export class FileBrowserComponent implements OnInit {
   }
 
   deleteFile(fileInfo: FileInfo) {
-    if (!this.needConfirm) {
+    if (this.needConfirm) {
       this.dialogSrv.openConfirmDialog("File to delete: " + fileInfo.path, "Are you sure you want to delete this file?").afterClosed().subscribe((result) => {
         if (result == true) {
           this.generalService.deleteFile(fileInfo.path, this.filePath).subscribe({
