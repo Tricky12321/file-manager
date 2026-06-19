@@ -410,6 +410,61 @@ public class FileSystemService
         return fileInfos;
     }
 
+    // Scans a (link) folder for "sample" files: files whose name contains "sample",
+    // or that live inside a folder named "Sample"/"Samples". Returned pre-selected so the
+    // UI marks them for deletion; the user can deselect false positives before deleting.
+    public List<FileInfo> GetSampleFiles(string rootPath)
+    {
+        var fileInfos = new List<FileInfo>();
+        foreach (var file in Directory.EnumerateFiles(rootPath, "*", SearchOption.AllDirectories))
+        {
+            if (!IsSampleFile(file))
+            {
+                continue;
+            }
+
+            long size = 0;
+            try
+            {
+                size = new System.IO.FileInfo(file).Length;
+            }
+            catch
+            {
+                // Ignore unreadable files
+            }
+
+            fileInfos.Add(new FileInfo()
+            {
+                Path = file,
+                Size = size,
+                IsSample = true,
+                Selected = true,
+            });
+        }
+
+        return fileInfos;
+    }
+
+    private static bool IsSampleFile(string filePath)
+    {
+        var fileName = System.IO.Path.GetFileName(filePath);
+        if (fileName.Contains("sample", StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        var directory = System.IO.Path.GetDirectoryName(filePath) ?? string.Empty;
+        foreach (var segment in directory.Split(System.IO.Path.DirectorySeparatorChar, StringSplitOptions.RemoveEmptyEntries))
+        {
+            if (segment.Equals("sample", StringComparison.OrdinalIgnoreCase) || segment.Equals("samples", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     private async Task RemoveFileFromCache(string path, string directoryPath)
     {
         foreach (var cachePath in new[] { FileCacheFile, HashCacheFile })

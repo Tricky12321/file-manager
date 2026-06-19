@@ -1,135 +1,27 @@
-<h1>{{ this.folderMode ? "Folder" : "File" }} dashboard ({{ !this.folderMode ? this.filePath : this.folderPath }})</h1>
 @if (this.loading) {
   <i class="fa fa-spinner fa-spin fa-3x fa-fw"></i>
 }
-<div class="row">
-  <div class="col-9">
-    @if (!this.loading) {
-      <div class="row">
-        <div class="col-2">
-          <div class="form-group">
-            <label for="hardlinks">Hardlinks</label>
-            <select id="hardlinks" class="form-select" [(ngModel)]="hardlinkFilter" (change)="paramsChanged()">
-              <option [value]="null">All</option>
-              <option [value]="true">Only hardlinks</option>
-              <option [value]="false">No hardlinks</option>
-            </select>
-          </div>
-        </div>
-        <div class="col-2">
-          <div class="form-group">
-            <label for="inQbit">In Qbit</label>
-            <select id="inQbit" class="form-select" [(ngModel)]="inQbitFilter" (change)="paramsChanged()">
-              <option [value]="null">All</option>
-              <option [value]="true">Only in Qbit</option>
-              <option [value]="false">Not in Qbit</option>
-            </select>
-          </div>
-        </div>
-        <div class="col-2">
-          <div class="form-group">
-            <label for="inQbitFolder">In Qbit Folder</label>
-            <select id="inQbitFolder" class="form-select" [(ngModel)]="folderInQbitFilter" (change)="paramsChanged()">
-              <option [value]="null">All</option>
-              <option [value]="true">In folder</option>
-              <option [value]="false">Not in folder</option>
-            </select>
-          </div>
-        </div>
-        <div class="col-2">
-          <div class="form-group">
-            <label for="hashDuplicate">Hash check</label>
-            <select id="hashDuplicate" class="form-select" [(ngModel)]="hashDuplicate" (change)="paramsChanged()">
-              <option [value]="null">All</option>
-              <option [value]="true">Duplicated</option>
-              <option [value]="false">Not duplicated</option>
-            </select>
-          </div>
-        </div>
-        <div class="col-4">
-          <div class="form-group">
-            <label for="needConfirm">Need Confirmation before delete</label>
-            <input type="checkbox" id="needConfirm" class="form-check-input" [(ngModel)]="this.needConfirm" (change)="paramsChanged()"/>
-          </div>
-          <div>
-            @if (!this.folderMode) {
-              <button class="btn btn-primary ms-2" (click)="deleteSelectedFiles()">Delete selected files</button>
-            } @else if (this.folderMode) {
-              <button class="btn btn-primary ms-2" (click)="deleteSelectedFolders()">Delete selected folder</button>
-            }
-            <button class="btn btn-secondary ms-2" (click)="toggleSelectedFiles()">Toggle selected {{ this.folderMode ? "folders" : "files" }}</button>
-          </div>
-        </div>
-      </div>
-    }
+
+@if (this.sampleMode) {
+  <h1>Sample cleanup ({{ this.samplePath }})</h1>
+  <div class="mb-3">
+    <button class="btn btn-danger" (click)="deleteAllSamples()">Delete all selected…</button>
+    <button class="btn btn-secondary ms-2" (click)="toggleSelectedFiles()">Toggle selected</button>
+    <button class="btn btn-secondary ms-2" (click)="this.load(true)">Refresh data</button>
   </div>
-  <div class="col-3">
-    <button class="btn btn-secondary mt-4" (click)="this.load(true)">Refresh data</button>
-  </div>
-</div>
-@if (!this.folderMode) {
-  <simple-table [url]="this.buildUrl()" [template]="rowTemplateServer" [loadingText]="'Fetching files...'">
+  <p class="text-muted">Files whose name contains "sample" or that live in a Sample/ folder. Pre-selected for deletion — review before confirming.</p>
+
+  <simple-table [url]="this.buildUrl()" [template]="rowTemplateSamples" [pageSize]="500" [loadingText]="'Scanning for samples...'">
     <thead>
     <tr>
       <th></th>
       <th data-column-key="Path">Path</th>
       <th data-column-key="Size">Size</th>
-      <th data-column-key="IsHardlink">Hardlink</th>
-      <th data-column-key="InQbit">In Qbit</th>
-      <th data-column-key="FolderInQbit">Folder in Qbit</th>
-      <th data-column-key="HashDuplicate">Hash Duplicate</th>
-      <th data-column-key="Hash">Hash</th>
       <th></th>
     </tr>
     </thead>
   </simple-table>
-  <ng-template #rowTemplateServer let-fileInfo="row">
-    <tr>
-      <td>
-        <input type="checkbox" [(ngModel)]="fileInfo.selected"/>
-      </td>
-      <td>{{ fileInfo.path }}</td>
-      <td
-        [attr.data-sort]="fileInfo.size">{{ fileInfo.sizeGb > 1 ? fileInfo.sizeGb + " GB" : fileInfo.sizeMb + " MB" }}
-      </td>
-      <td [attr.data-sort]="fileInfo.isHardlink">
-        <i class="fa" [class.text-success]="!fileInfo.isHardlink" [class.fa-times]="!fileInfo.isHardlink"
-           [class.text-danger]="fileInfo.isHardlink" [class.fa-check]="fileInfo.isHardlink"></i>
-      </td>
-      <td>
-        <i class="fa" [class.text-danger]="!fileInfo.inQbit" [class.fa-times]="!fileInfo.inQbit"
-           [class.text-success]="fileInfo.inQbit" [class.fa-check]="fileInfo.inQbit"></i>
-      </td>
-      <td>
-        <i class="fa" [class.text-danger]="!fileInfo.folderInQbit" [class.fa-times]="!fileInfo.folderInQbit" [class.text-success]="fileInfo.folderInQbit" [class.fa-check]="fileInfo.folderInQbit"></i>
-        @if (fileInfo.torrentPath != null && fileInfo.torrentPath != "") {
-          <i class="fa fa-info-circle text-info ms-2" [title]="fileInfo.torrentPath"></i>
-        }
-      </td>
-      <td [attr.data-sort]="fileInfo.hashDuplicate">
-        <i class="fa" [class.text-success]="!fileInfo.hashDuplicate" [class.fa-times]="!fileInfo.hashDuplicate"
-           [class.text-danger]="fileInfo.hashDuplicate" [class.fa-check]="fileInfo.hashDuplicate"></i>
-      </td>
-      <td [attr.data-sort]="fileInfo.partialHash">{{ fileInfo.partialHash }}</td>
-      <td>
-        <button class="btn btn-sm btn-danger me-2" (click)="deleteFile(fileInfo)">Delete</button>
-        <button class="btn btn-sm btn-warning" (click)="openFolder(fileInfo)">Open Folder</button>
-      </td>
-    </tr>
-  </ng-template>
-} @else if (this.folderMode) {
-  <simple-table [url]="this.buildUrl()" [template]="rowTemplateServer" [loadingText]="'Fetching folders...'">
-    <thead>
-    <tr>
-      <th></th>
-      <th data-column-key="Path">Path</th>
-      <th data-column-key="Size">Size</th>
-      <th data-column-key="FolderInQbit">Folder in Qbit</th>
-      <th></th>
-    </tr>
-    </thead>
-  </simple-table>
-  <ng-template #rowTemplateServer let-fileInfo="row">
+  <ng-template #rowTemplateSamples let-fileInfo="row">
     <tr>
       <td>
         <input type="checkbox" [(ngModel)]="fileInfo.selected"/>
@@ -139,17 +31,161 @@
         [attr.data-sort]="fileInfo.size">{{ fileInfo.sizeGb > 1 ? fileInfo.sizeGb + " GB" : fileInfo.sizeMb + " MB" }}
       </td>
       <td>
-        <i class="fa" [class.text-danger]="!fileInfo.folderInQbit" [class.fa-times]="!fileInfo.folderInQbit"
-           [class.text-success]="fileInfo.folderInQbit" [class.fa-check]="fileInfo.folderInQbit"></i>
-        @if (fileInfo.torrentPath != null && fileInfo.torrentPath != "") {
-          <i class="fa fa-info-circle text-info ms-2" [title]="fileInfo.torrentPath"></i>
-        }
-      </td>
-      <td [attr.data-sort]="fileInfo.partialHash">{{ fileInfo.partialHash }}</td>
-      <td>
-        <button class="btn btn-sm btn-warning me-2" (click)="openFolder(fileInfo)">Open Folder</button>
-        <button class="btn btn-sm btn-danger" (click)="deleteFolder(fileInfo)">Delete Folder</button>
+        <button class="btn btn-sm btn-danger" (click)="deleteFile(fileInfo)">Delete</button>
       </td>
     </tr>
   </ng-template>
+} @else {
+  <h1>{{ this.folderMode ? "Folder" : "File" }} dashboard ({{ !this.folderMode ? this.filePath : this.folderPath }})</h1>
+  <div class="row">
+    <div class="col-9">
+      @if (!this.loading) {
+        <div class="row">
+          <div class="col-2">
+            <div class="form-group">
+              <label for="hardlinks">Hardlinks</label>
+              <select id="hardlinks" class="form-select" [(ngModel)]="hardlinkFilter" (change)="paramsChanged()">
+                <option [value]="null">All</option>
+                <option [value]="true">Only hardlinks</option>
+                <option [value]="false">No hardlinks</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-2">
+            <div class="form-group">
+              <label for="inQbit">In Qbit</label>
+              <select id="inQbit" class="form-select" [(ngModel)]="inQbitFilter" (change)="paramsChanged()">
+                <option [value]="null">All</option>
+                <option [value]="true">Only in Qbit</option>
+                <option [value]="false">Not in Qbit</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-2">
+            <div class="form-group">
+              <label for="inQbitFolder">In Qbit Folder</label>
+              <select id="inQbitFolder" class="form-select" [(ngModel)]="folderInQbitFilter" (change)="paramsChanged()">
+                <option [value]="null">All</option>
+                <option [value]="true">In folder</option>
+                <option [value]="false">Not in folder</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-2">
+            <div class="form-group">
+              <label for="hashDuplicate">Hash check</label>
+              <select id="hashDuplicate" class="form-select" [(ngModel)]="hashDuplicate" (change)="paramsChanged()">
+                <option [value]="null">All</option>
+                <option [value]="true">Duplicated</option>
+                <option [value]="false">Not duplicated</option>
+              </select>
+            </div>
+          </div>
+          <div class="col-4">
+            <div class="form-group">
+              <label for="needConfirm">Need Confirmation before delete</label>
+              <input type="checkbox" id="needConfirm" class="form-check-input" [(ngModel)]="this.needConfirm" (change)="paramsChanged()"/>
+            </div>
+            <div>
+              @if (!this.folderMode) {
+                <button class="btn btn-primary ms-2" (click)="deleteSelectedFiles()">Delete selected files</button>
+              } @else if (this.folderMode) {
+                <button class="btn btn-primary ms-2" (click)="deleteSelectedFolders()">Delete selected folder</button>
+              }
+              <button class="btn btn-secondary ms-2" (click)="toggleSelectedFiles()">Toggle selected {{ this.folderMode ? "folders" : "files" }}</button>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+    <div class="col-3">
+      <button class="btn btn-secondary mt-4" (click)="this.load(true)">Refresh data</button>
+    </div>
+  </div>
+  @if (!this.folderMode) {
+    <simple-table [url]="this.buildUrl()" [template]="rowTemplateServer" [loadingText]="'Fetching files...'">
+      <thead>
+      <tr>
+        <th></th>
+        <th data-column-key="Path">Path</th>
+        <th data-column-key="Size">Size</th>
+        <th data-column-key="IsHardlink">Hardlink</th>
+        <th data-column-key="InQbit">In Qbit</th>
+        <th data-column-key="FolderInQbit">Folder in Qbit</th>
+        <th data-column-key="HashDuplicate">Hash Duplicate</th>
+        <th data-column-key="Hash">Hash</th>
+        <th></th>
+      </tr>
+      </thead>
+    </simple-table>
+    <ng-template #rowTemplateServer let-fileInfo="row">
+      <tr>
+        <td>
+          <input type="checkbox" [(ngModel)]="fileInfo.selected"/>
+        </td>
+        <td>{{ fileInfo.path }}</td>
+        <td
+          [attr.data-sort]="fileInfo.size">{{ fileInfo.sizeGb > 1 ? fileInfo.sizeGb + " GB" : fileInfo.sizeMb + " MB" }}
+        </td>
+        <td [attr.data-sort]="fileInfo.isHardlink">
+          <i class="fa" [class.text-success]="!fileInfo.isHardlink" [class.fa-times]="!fileInfo.isHardlink"
+             [class.text-danger]="fileInfo.isHardlink" [class.fa-check]="fileInfo.isHardlink"></i>
+        </td>
+        <td>
+          <i class="fa" [class.text-danger]="!fileInfo.inQbit" [class.fa-times]="!fileInfo.inQbit"
+             [class.text-success]="fileInfo.inQbit" [class.fa-check]="fileInfo.inQbit"></i>
+        </td>
+        <td>
+          <i class="fa" [class.text-danger]="!fileInfo.folderInQbit" [class.fa-times]="!fileInfo.folderInQbit" [class.text-success]="fileInfo.folderInQbit" [class.fa-check]="fileInfo.folderInQbit"></i>
+          @if (fileInfo.torrentPath != null && fileInfo.torrentPath != "") {
+            <i class="fa fa-info-circle text-info ms-2" [title]="fileInfo.torrentPath"></i>
+          }
+        </td>
+        <td [attr.data-sort]="fileInfo.hashDuplicate">
+          <i class="fa" [class.text-success]="!fileInfo.hashDuplicate" [class.fa-times]="!fileInfo.hashDuplicate"
+             [class.text-danger]="fileInfo.hashDuplicate" [class.fa-check]="fileInfo.hashDuplicate"></i>
+        </td>
+        <td [attr.data-sort]="fileInfo.partialHash">{{ fileInfo.partialHash }}</td>
+        <td>
+          <button class="btn btn-sm btn-danger me-2" (click)="deleteFile(fileInfo)">Delete</button>
+          <button class="btn btn-sm btn-warning" (click)="openFolder(fileInfo)">Open Folder</button>
+        </td>
+      </tr>
+    </ng-template>
+  } @else if (this.folderMode) {
+    <simple-table [url]="this.buildUrl()" [template]="rowTemplateServer" [loadingText]="'Fetching folders...'">
+      <thead>
+      <tr>
+        <th></th>
+        <th data-column-key="Path">Path</th>
+        <th data-column-key="Size">Size</th>
+        <th data-column-key="FolderInQbit">Folder in Qbit</th>
+        <th></th>
+      </tr>
+      </thead>
+    </simple-table>
+    <ng-template #rowTemplateServer let-fileInfo="row">
+      <tr>
+        <td>
+          <input type="checkbox" [(ngModel)]="fileInfo.selected"/>
+        </td>
+        <td>{{ fileInfo.path }}</td>
+        <td
+          [attr.data-sort]="fileInfo.size">{{ fileInfo.sizeGb > 1 ? fileInfo.sizeGb + " GB" : fileInfo.sizeMb + " MB" }}
+        </td>
+        <td>
+          <i class="fa" [class.text-danger]="!fileInfo.folderInQbit" [class.fa-times]="!fileInfo.folderInQbit"
+             [class.text-success]="fileInfo.folderInQbit" [class.fa-check]="fileInfo.folderInQbit"></i>
+          @if (fileInfo.torrentPath != null && fileInfo.torrentPath != "") {
+            <i class="fa fa-info-circle text-info ms-2" [title]="fileInfo.torrentPath"></i>
+          }
+        </td>
+        <td [attr.data-sort]="fileInfo.partialHash">{{ fileInfo.partialHash }}</td>
+        <td>
+          <button class="btn btn-sm btn-warning me-2" (click)="openFolder(fileInfo)">Open Folder</button>
+          <button class="btn btn-sm btn-danger" (click)="deleteFolder(fileInfo)">Delete Folder</button>
+        </td>
+      </tr>
+    </ng-template>
+  }
 }

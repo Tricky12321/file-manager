@@ -36,6 +36,8 @@ export class FileBrowserComponent implements OnInit {
   public folderMode: boolean = false;
   public smallMode: boolean = false;
   public emptyMode: boolean = false;
+  public sampleMode: boolean = false;
+  public samplePath: string = '';
 
 
   constructor(public http: HttpClient, public generalService: GeneralService, public fileService: FileService, public dialogSrv: DialogService, public toastrService: ToastrService, public router: Router, public route: ActivatedRoute) {
@@ -49,6 +51,10 @@ export class FileBrowserComponent implements OnInit {
   }
 
   buildUrl(): string {
+    if (this.sampleMode) {
+      this.currentUrl = 'api/file/getSampleFiles?path=' + this.samplePath;
+      return this.currentUrl;
+    }
     if (this.filePath != "") {
       let hardlink = this.hardlinkFilter?.toString() !== "null" ? this.hardlinkFilter : null;
       let inQbit = this.inQbitFilter?.toString() !== "null" ? this.inQbitFilter : null;
@@ -110,11 +116,17 @@ export class FileBrowserComponent implements OnInit {
     this.folderMode = false;
     this.emptyMode = false;
     this.smallMode = false;
+    this.sampleMode = false;
+    this.samplePath = '';
 
     const scanPath = data.scanPath ?? '';
     switch (data.mode) {
       case 'files':
         this.filePath = scanPath;
+        break;
+      case 'samples':
+        this.samplePath = scanPath;
+        this.sampleMode = true;
         break;
       case 'folders':
         this.folderPath = scanPath;
@@ -137,7 +149,7 @@ export class FileBrowserComponent implements OnInit {
     }
 
     // A ?path= query param always wins for the file view (deep links / "Open folder").
-    if (pathParam && data.mode !== 'folders' && data.mode !== 'empty' && data.mode !== 'small') {
+    if (pathParam && data.mode !== 'folders' && data.mode !== 'empty' && data.mode !== 'small' && data.mode !== 'samples') {
       this.filePath = pathParam;
     }
 
@@ -177,6 +189,35 @@ export class FileBrowserComponent implements OnInit {
     } else {
       return [];
     }
+  }
+
+  // Opens the deselectable confirm dialog with every currently-selected sample, so the
+  // user can review and uncheck false positives before bulk-deleting the rest.
+  deleteAllSamples() {
+    const candidates = this.getFiles().filter(x => x.selected).map(x => x.path);
+    if (candidates.length == 0) {
+      this.toastrService.info("No sample files selected");
+      return;
+    }
+    this.dialogSrv.openSelectionDialog(candidates, "Delete sample files")
+      .afterClosed().subscribe((paths) => {
+      if (paths == null) {
+        this.toastrService.warning("Not deleting files");
+        return;
+      }
+      if (paths.length == 0) {
+        return;
+      }
+      this.generalService.deleteFiles(paths).subscribe({
+        next: () => {
+          this.toastrService.success(`Deleted ${paths.length} sample file(s)`);
+          this.load();
+        },
+        error: () => {
+          this.toastrService.error("Error deleting files, please refresh and try again");
+        }
+      });
+    });
   }
 
   deleteSelectedFiles() {

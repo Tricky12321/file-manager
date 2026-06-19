@@ -4,12 +4,14 @@ import {FileBrowserComponent} from './modules/fileBrowser/fileBrowser.component'
 import {QbitfilesComponent} from './modules/qbitfiles/qbitfiles.component';
 
 // FileBrowser is driven entirely by route data instead of inspecting window.location.
-// mode: 'files' | 'folders' | 'empty' | 'small' | 'browse'
+// mode: 'files' | 'folders' | 'empty' | 'small' | 'samples' | 'browse'
 export const routes: Routes = [
   {path: 'qb', component: QbitdashboardComponent},
   {path: 'qbfiles', component: QbitfilesComponent},
   {path: 'files/tv', component: FileBrowserComponent, data: {scanPath: '/torrent/TV', mode: 'files'}},
   {path: 'files/film', component: FileBrowserComponent, data: {scanPath: '/torrent/Film', mode: 'files'}},
+  {path: 'samples/tv', component: FileBrowserComponent, data: {scanPath: '/torrent/TV-link', mode: 'samples'}},
+  {path: 'samples/film', component: FileBrowserComponent, data: {scanPath: '/torrent/Film-link', mode: 'samples'}},
   {path: 'directories/tv', component: FileBrowserComponent, data: {scanPath: '/torrent/TV', mode: 'folders'}},
   {path: 'directories/film', component: FileBrowserComponent, data: {scanPath: '/torrent/Film', mode: 'folders'}},
   {path: 'directories/empty/tv', component: FileBrowserComponent, data: {scanPath: '/torrent/TV', mode: 'empty'}},

@@ -75,6 +75,12 @@ public class FileController : ControllerBase
         return Ok(_fileSystemService.GetSmallFolders(path).ToTableResponse(tableRequest));
     }
 
+    [HttpPost("getSampleFiles")]
+    public IActionResult GetSampleFiles([FromBody] TableRequest tableRequest, [FromQuery] string path)
+    {
+        return Ok(_fileSystemService.GetSampleFiles(path).ToTableResponse(tableRequest));
+    }
+
     [HttpPost("deleteFolders")]
     public async Task<IActionResult> DeleteFolders([FromBody] List<string> foldersToDelete)
     {
