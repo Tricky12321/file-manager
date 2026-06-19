@@ -1,4 +1,5 @@
 import {Component, OnInit,} from '@angular/core';
+import {CommonModule} from '@angular/common';
 import {TorrentInfo} from "../../models/torrentInfo";
 import {GeneralService} from "../../shared/services/general.service";
 
@@ -7,13 +8,11 @@ import {GeneralService} from "../../shared/services/general.service";
   selector: 'qbitdashboard',
   templateUrl: 'qbitdashboard.component.html',
   styleUrls: ['qbitdashboard.component.scss'],
-  standalone: false
+  standalone: true,
+  imports: [CommonModule]
 })
 export class QbitdashboardComponent implements OnInit {
   public torrentList: TorrentInfo[] | null = null;
-  public dtOptions: DataTables.Settings = {
-    paging: false,
-  }
 
   constructor(public generalService: GeneralService) {
 

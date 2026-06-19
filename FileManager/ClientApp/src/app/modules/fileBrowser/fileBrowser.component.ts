@@ -1,12 +1,12 @@
 import {Component, OnInit, ViewChild,} from '@angular/core';
-import {TorrentInfo} from "../../models/torrentInfo";
+import {CommonModule} from '@angular/common';
+import {FormsModule} from '@angular/forms';
 import {GeneralService} from "../../shared/services/general.service";
 import {FileService} from "../../shared/services/file.service";
 import {FileInfo} from 'src/app/models/fileInfo';
 import {DialogService} from "../../shared/services/dialogs/dialog.service";
 import {ToastrService} from "ngx-toastr";
-import {SimpleTableComponent, TableRequest} from "../simpleTable/simple-table.component";
-import {Observable} from "rxjs";
+import {SimpleTableComponent} from "../simpleTable/simple-table.component";
 import {HttpClient} from "@angular/common/http";
 import {ActivatedRoute, Router} from "@angular/router";
 
@@ -15,7 +15,8 @@ import {ActivatedRoute, Router} from "@angular/router";
   selector: 'filebrowser',
   templateUrl: 'fileBrowser.component.html',
   styleUrls: ['fileBrowser.component.scss'],
-  standalone: false
+  standalone: true,
+  imports: [CommonModule, FormsModule, SimpleTableComponent]
 })
 export class FileBrowserComponent implements OnInit {
   public loading: boolean = false;
@@ -37,7 +38,7 @@ export class FileBrowserComponent implements OnInit {
   public emptyMode: boolean = false;
 
 
-  constructor(public http: HttpClient, public generalService: GeneralService, public fileService: FileService, public dialogSrv: DialogService, public toastrService: ToastrService, public router: Router) {
+  constructor(public http: HttpClient, public generalService: GeneralService, public fileService: FileService, public dialogSrv: DialogService, public toastrService: ToastrService, public router: Router, public route: ActivatedRoute) {
 
     this.hardlinkFilter = localStorage.getItem("hardlink") == "null" ? null : (localStorage.getItem("hardlink") == "true");
     this.inQbitFilter = localStorage.getItem("inQbit") == "null" ? null : (localStorage.getItem("inQbit") == "true");
@@ -99,40 +100,47 @@ export class FileBrowserComponent implements OnInit {
   }
 
   ngOnInit() {
-    // get the path from path query param, and if it is not set continue
-    let params = new URLSearchParams(window.location.search);
-    let pathParam = params.get("path");
-    if (pathParam != null && pathParam != "") {
-      this.filePath = pathParam;
-    } else if (window.location.pathname == "/files/tv") {
-      this.filePath = "/torrent/TV"
-      this.folderMode = false;
-    } else if (window.location.pathname == "/files/film") {
-      this.filePath = "/torrent/Film"
-      this.folderMode = false;
-    } else if (window.location.pathname == "/directories/film") {
-      this.folderPath = "/torrent/Film"
-      this.folderMode = true;
-    } else if (window.location.pathname == "/directories/tv") {
-      this.folderPath = "/torrent/TV"
-      this.folderMode = true;
-    } else if (window.location.pathname == "/directories/empty/tv") {
-      this.folderPath = "/torrent/TV"
-      this.emptyMode = true;
-      this.folderMode = true;
-    } else if (window.location.pathname == "/directories/empty/film") {
-      this.folderPath = "/torrent/Film"
-      this.emptyMode = true;
-      this.folderMode = true;
-    } else if (window.location.pathname == "/directories/small/tv") {
-      this.folderPath = "/torrent/TV"
-      this.smallMode = true;
-      this.folderMode = true;
-    }  else if (window.location.pathname == "/directories/small/film") {
-      this.folderPath = "/torrent/Film"
-      this.smallMode = true;
-      this.folderMode = true;
+    // Configuration comes from the route's data ({scanPath, mode}); /browse takes its
+    // path from the ?path= query param instead.
+    const data = this.route.snapshot.data as { scanPath?: string; mode?: string };
+    const pathParam = this.route.snapshot.queryParamMap.get('path');
+
+    this.filePath = '';
+    this.folderPath = '';
+    this.folderMode = false;
+    this.emptyMode = false;
+    this.smallMode = false;
+
+    const scanPath = data.scanPath ?? '';
+    switch (data.mode) {
+      case 'files':
+        this.filePath = scanPath;
+        break;
+      case 'folders':
+        this.folderPath = scanPath;
+        this.folderMode = true;
+        break;
+      case 'empty':
+        this.folderPath = scanPath;
+        this.folderMode = true;
+        this.emptyMode = true;
+        break;
+      case 'small':
+        this.folderPath = scanPath;
+        this.folderMode = true;
+        this.smallMode = true;
+        break;
+      case 'browse':
+      default:
+        this.filePath = pathParam ?? '';
+        break;
     }
+
+    // A ?path= query param always wins for the file view (deep links / "Open folder").
+    if (pathParam && data.mode !== 'folders' && data.mode !== 'empty' && data.mode !== 'small') {
+      this.filePath = pathParam;
+    }
+
     this.load();
   }
 

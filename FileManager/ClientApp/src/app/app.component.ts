@@ -1,26 +1,12 @@
 import {Component} from '@angular/core';
-import {SwUpdate, VersionEvent} from "@angular/service-worker";
+import {RouterOutlet, RouterLink, RouterLinkActive} from '@angular/router';
+import {ConfirmDialogComponent} from './shared/services/dialogs/confirmDialog/confirm-dialog/confirm-dialog.component';
 
 @Component({
-    selector: 'appRoot',
-    templateUrl: './app.component.html',
-    standalone: false
+  selector: 'appRoot',
+  standalone: true,
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, ConfirmDialogComponent],
+  templateUrl: './app.component.html',
 })
 export class AppComponent {
-  title = 'app';
-
-    constructor(update: SwUpdate) {
-        if (!update.isEnabled) {
-            return;
-        }
-      update.versionUpdates.subscribe((event: VersionEvent) => {
-        if (!document.hidden && event.type == 'VERSION_DETECTED') {
-          if (confirm('New update available, please reload page')) {
-            update.activateUpdate().then((newUpdate) => {
-              window.location.reload();
-            });
-          }
-        }
-      });
-    }
 }

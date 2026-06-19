@@ -68,7 +68,7 @@
   </div>
 </div>
 @if (!this.folderMode) {
-  <simple-table [serverSide]="true" [url]="this.buildUrl()" [template]="rowTemplateServer" [loadingText]="'Fetching files...'">
+  <simple-table [url]="this.buildUrl()" [template]="rowTemplateServer" [loadingText]="'Fetching files...'">
     <thead>
     <tr>
       <th></th>
@@ -103,7 +103,7 @@
       <td>
         <i class="fa" [class.text-danger]="!fileInfo.folderInQbit" [class.fa-times]="!fileInfo.folderInQbit" [class.text-success]="fileInfo.folderInQbit" [class.fa-check]="fileInfo.folderInQbit"></i>
         @if (fileInfo.torrentPath != null && fileInfo.torrentPath != "") {
-          <i class="fa fa-info-circle text-info ms-2" [ngbTooltip]="fileInfo.torrentPath"></i>
+          <i class="fa fa-info-circle text-info ms-2" [title]="fileInfo.torrentPath"></i>
         }
       </td>
       <td [attr.data-sort]="fileInfo.hashDuplicate">
@@ -118,7 +118,7 @@
     </tr>
   </ng-template>
 } @else if (this.folderMode) {
-  <simple-table [serverSide]="true" [url]="this.buildUrl()" [template]="rowTemplateServer" [loadingText]="'Fetching folders...'">
+  <simple-table [url]="this.buildUrl()" [template]="rowTemplateServer" [loadingText]="'Fetching folders...'">
     <thead>
     <tr>
       <th></th>
@@ -142,7 +142,7 @@
         <i class="fa" [class.text-danger]="!fileInfo.folderInQbit" [class.fa-times]="!fileInfo.folderInQbit"
            [class.text-success]="fileInfo.folderInQbit" [class.fa-check]="fileInfo.folderInQbit"></i>
         @if (fileInfo.torrentPath != null && fileInfo.torrentPath != "") {
-          <i class="fa fa-info-circle text-info ms-2" [ngbTooltip]="fileInfo.torrentPath"></i>
+          <i class="fa fa-info-circle text-info ms-2" [title]="fileInfo.torrentPath"></i>
         }
       </td>
       <td [attr.data-sort]="fileInfo.partialHash">{{ fileInfo.partialHash }}</td>

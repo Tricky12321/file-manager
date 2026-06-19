@@ -1,10 +1,20 @@
-﻿<div>
-  <div class="mat-dialog-title">
-    <span>{{data.header}}</span>
+@if (dialogService.request(); as req) {
+  <div class="modal-backdrop fade show"></div>
+  <div class="modal fade show d-block" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">{{ req.header }}</h5>
+          <button type="button" class="btn-close" aria-label="Close" (click)="dialogService.respond(false)"></button>
+        </div>
+        <div class="modal-body">
+          <span class="newLines" [innerHTML]="req.message"></span>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="dialogService.respond(false)">{{ req.noButton }}</button>
+          <button type="button" class="btn btn-primary" (click)="dialogService.respond(true)">{{ req.yesButton }}</button>
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="content-container mb-3">
-    <span class="content-span full-width" [innerHTML]="data.message"></span>
-  </div>
-  <button class="btn btn-secondary mt-1" id="no-button" (click)="closeDialog(false)">{{data.noButton}}</button>
-  <button class="btn btn-primary mt-1 float-end" id="yes-button" (click)="closeDialog(true)">{{data.yesButton}}</button>
-</div>
+}

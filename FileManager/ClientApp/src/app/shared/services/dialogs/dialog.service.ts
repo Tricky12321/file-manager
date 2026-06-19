@@ -1,33 +1,39 @@
-import {Injectable} from '@angular/core';
-import {MatDialog} from '@angular/material/dialog';
-import {ConfirmDialogComponent} from "./confirmDialog/confirm-dialog/confirm-dialog.component";
+import {Injectable, signal} from '@angular/core';
+import {Observable, Subject} from 'rxjs';
+
+export interface ConfirmRequest {
+  header: string;
+  message: string;
+  yesButton: string;
+  noButton: string;
+  result$: Subject<boolean>;
+}
+
+export interface ConfirmHandle {
+  afterClosed(): Observable<boolean>;
+}
 
 @Injectable({
   providedIn: 'root'
 })
-
 export class DialogService {
-  constructor(private dialog: MatDialog) {
+  // The currently open confirm request (null = no dialog). The host component renders it.
+  readonly request = signal<ConfirmRequest | null>(null);
+
+  openConfirmDialog(msg: string, header = '', yesButton = 'Yes', noButton = 'Cancel'): ConfirmHandle {
+    const result$ = new Subject<boolean>();
+    this.request.set({header, message: msg, yesButton, noButton, result$});
+    return {
+      afterClosed: () => result$.asObservable()
+    };
   }
 
-  public modalOpen = false;
-
-  openConfirmDialog(msg: any, header = '', yesButton = 'Yes', noButton = 'Cancel') {
-    return this.dialog.open(ConfirmDialogComponent, {
-      width: '500px',
-      height: '200px',
-      panelClass: 'confirm-dialog-container',
-      disableClose: false,
-      hasBackdrop: true,
-      position: {top: '130px'},
-      autoFocus: false,
-      data: {
-        header: header,
-        message: msg,
-        yesButton: yesButton,
-        noButton: noButton
-      }
-    });
+  respond(result: boolean): void {
+    const req = this.request();
+    if (req) {
+      req.result$.next(result);
+      req.result$.complete();
+    }
+    this.request.set(null);
   }
-
 }

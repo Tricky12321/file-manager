@@ -1,5 +1,72 @@
-<html>
-<body>
-<index></index>
-</body>
-</html>
+<div class="d-flex">
+  <!-- Sidebar -->
+  <nav class="d-flex flex-column flex-shrink-0 p-3 text-bg-dark vh-100 sticky-top" style="width: 280px;">
+    <span class="d-flex align-items-center mb-3 me-md-auto text-white text-decoration-none">
+      <i class="fa fa-broom me-2"></i>
+      <span class="fs-4">File cleaner</span>
+    </span>
+    <hr>
+    <ul class="nav nav-pills flex-column mb-auto">
+      <li class="nav-item">
+        <a routerLink="/qb" routerLinkActive="active" class="nav-link text-white">
+          <i class="fa fa-magnet me-2"></i>Torrents
+        </a>
+      </li>
+      <li class="nav-item">
+        <a routerLink="/qbfiles" routerLinkActive="active" class="nav-link text-white">
+          <i class="fa fa-file me-2"></i>Torrent files
+        </a>
+      </li>
+      <li><hr></li>
+      <li class="nav-item">
+        <a routerLink="/files/film" routerLinkActive="active" class="nav-link text-white">
+          <i class="fa fa-film me-2"></i>Files - Film
+        </a>
+      </li>
+      <li class="nav-item">
+        <a routerLink="/files/tv" routerLinkActive="active" class="nav-link text-white">
+          <i class="fa fa-tv me-2"></i>Files - TV
+        </a>
+      </li>
+      <li><hr></li>
+      <li class="nav-item">
+        <a routerLink="/directories/film" routerLinkActive="active" class="nav-link text-white">
+          <i class="fa fa-folder me-2"></i>Directories - Film
+        </a>
+      </li>
+      <li class="nav-item">
+        <a routerLink="/directories/tv" routerLinkActive="active" class="nav-link text-white">
+          <i class="fa fa-folder me-2"></i>Directories - TV
+        </a>
+      </li>
+      <li><hr></li>
+      <li class="nav-item">
+        <a routerLink="/directories/empty/film" routerLinkActive="active" class="nav-link text-white">
+          <i class="fa fa-folder-open me-2"></i>Empty - Film
+        </a>
+      </li>
+      <li class="nav-item">
+        <a routerLink="/directories/small/film" routerLinkActive="active" class="nav-link text-white">
+          <i class="fa fa-folder-minus me-2"></i>Small - Film
+        </a>
+      </li>
+      <li class="nav-item">
+        <a routerLink="/directories/empty/tv" routerLinkActive="active" class="nav-link text-white">
+          <i class="fa fa-folder-open me-2"></i>Empty - TV
+        </a>
+      </li>
+      <li class="nav-item">
+        <a routerLink="/directories/small/tv" routerLinkActive="active" class="nav-link text-white">
+          <i class="fa fa-folder-minus me-2"></i>Small - TV
+        </a>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- Content -->
+  <main class="flex-grow-1 p-3 overflow-auto vh-100">
+    <router-outlet></router-outlet>
+  </main>
+</div>
+
+<confirm-dialog></confirm-dialog>

@@ -1,25 +1,27 @@
-/***************************************************************************************************
- * Load `$localize` onto the global scope - used if i18n tags appear in Angular templates.
- */
-import {enableProdMode} from '@angular/core';
-import {platformBrowserDynamic} from '@angular/platform-browser-dynamic';
+import {enableProdMode, importProvidersFrom} from '@angular/core';
+import {bootstrapApplication} from '@angular/platform-browser';
+import {provideRouter, withRouterConfig} from '@angular/router';
+import {provideHttpClient} from '@angular/common/http';
+import {provideAnimations} from '@angular/platform-browser/animations';
+import {ToastrModule} from 'ngx-toastr';
+import {registerLocaleData} from '@angular/common';
+import localeDa from '@angular/common/locales/da';
 
-import {AppModule} from './app/app.module';
+import {AppComponent} from './app/app.component';
+import {routes} from './app/app.routes';
 import {environment} from './environments/environment';
 
-export function getBaseUrl() {
-  return document.getElementsByTagName('base')[0].href;
-}
-
-const providers = [
-  {provide: 'BASE_URL', useFactory: getBaseUrl, deps: []}
-];
+registerLocaleData(localeDa, 'da');
 
 if (environment.production) {
   enableProdMode();
 }
 
-
-
-platformBrowserDynamic(providers).bootstrapModule(AppModule)
-  .catch(err => console.log(err));
+bootstrapApplication(AppComponent, {
+  providers: [
+    provideRouter(routes, withRouterConfig({onSameUrlNavigation: 'reload'})),
+    provideHttpClient(),
+    provideAnimations(),
+    importProvidersFrom(ToastrModule.forRoot()),
+  ],
+}).catch(err => console.error(err));
