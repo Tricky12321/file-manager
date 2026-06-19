@@ -258,6 +258,22 @@ table.table-bordered.table-collaps tbody tr:nth-child(even) td {
   }
 }
 
+/* App sidebar */
+.sidebar {
+  width: 280px;
+  /* Keep the active nav-pill highlight from bleeding past the sidebar edge. */
+  overflow-x: hidden;
+}
+
+.sidebar .nav-link {
+  border-radius: var(--bs-border-radius);
+}
+
+.sidebar .nav-link.active {
+  background-color: var(--bs-primary);
+  color: #fff;
+}
+
 /* Sidebar */
 #sidebar-container .sticky-offset {
   padding-top: 60px;
