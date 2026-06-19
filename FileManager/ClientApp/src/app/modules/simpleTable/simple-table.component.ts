@@ -10,6 +10,7 @@ import {
 import {CommonModule} from '@angular/common';
 import {FormsModule} from '@angular/forms';
 import {HttpClient} from "@angular/common/http";
+import {UrlStateService} from "../../shared/services/url-state.service";
 
 export interface TableRequest {
   pageNumber: number;
@@ -62,10 +63,14 @@ export class SimpleTableComponent implements AfterViewInit {
   public sortColumnKey: string | null = null;
   public sortColumnIndex: number | null = null;
 
+  // The page size the component was given, used to decide whether to persist size in the URL.
+  private defaultPageSize: number = 25;
+
   constructor(
     private host: ElementRef<HTMLElement>,
     private renderer: Renderer2,
-    public http: HttpClient
+    public http: HttpClient,
+    private urlState: UrlStateService
   ) {
   }
 
@@ -81,6 +86,9 @@ export class SimpleTableComponent implements AfterViewInit {
     if (thead) {
       Array.from(thead.querySelectorAll('th')).forEach((th) => this.renderer.addClass(th, 'sortable'));
     }
+
+    // Restore search / sort / page / size from the URL so a refresh keeps them.
+    this.restoreFromUrl(thead);
 
     // Headers are projected content, so delegate clicks from the table to drive sorting.
     this.renderer.listen(table, 'click', (event: Event) => {
@@ -136,10 +144,54 @@ export class SimpleTableComponent implements AfterViewInit {
     this.fetchServerData();
   }
 
+  // Read persisted state from the URL and reflect it (including the sorted-column arrow).
+  private restoreFromUrl(thead: HTMLElement | null): void {
+    this.defaultPageSize = this.pageSize;
+
+    const q = this.urlState.get('q');
+    if (q) {
+      this.searchTerm = q;
+    }
+    const size = parseInt(this.urlState.get('size') ?? '', 10);
+    if (!isNaN(size) && size > 0) {
+      this.pageSize = size;
+    }
+    const page = parseInt(this.urlState.get('page') ?? '', 10);
+    if (!isNaN(page) && page > 0) {
+      this.currentPage = page;
+    }
+    const sort = this.urlState.get('sort');
+    if (sort) {
+      this.sortColumnKey = sort;
+      this.currentSortAsc = this.urlState.get('dir') !== 'desc';
+
+      if (thead) {
+        const ths = Array.from(thead.querySelectorAll('th')) as HTMLElement[];
+        const idx = ths.findIndex((th, i) => (th.getAttribute('data-column-key') || i.toString()) === sort);
+        if (idx >= 0) {
+          this.sortColumnIndex = idx;
+          this.renderer.addClass(ths[idx], this.currentSortAsc ? 'sorted-asc' : 'sorted-desc');
+        }
+      }
+    }
+  }
+
+  // Mirror current search / sort / page / size into the URL (no navigation).
+  private syncUrl(): void {
+    this.urlState.patch({
+      q: this.searchTerm || null,
+      page: this.currentPage > 1 ? this.currentPage : null,
+      size: this.pageSize !== this.defaultPageSize ? this.pageSize : null,
+      sort: this.sortColumnKey,
+      dir: this.sortColumnKey ? (this.currentSortAsc ? 'asc' : 'desc') : null,
+    });
+  }
+
   private fetchServerData(): void {
     if (!this.url) {
       return;
     }
+    this.syncUrl();
     this.isLoading = true;
     const request: TableRequest = {
       pageNumber: this.currentPage,

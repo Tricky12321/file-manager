@@ -9,6 +9,7 @@ import {ToastrService} from "ngx-toastr";
 import {SimpleTableComponent} from "../simpleTable/simple-table.component";
 import {HttpClient} from "@angular/common/http";
 import {ActivatedRoute, Router} from "@angular/router";
+import {UrlStateService} from "../../shared/services/url-state.service";
 
 
 @Component({
@@ -42,14 +43,24 @@ export class FileBrowserComponent implements OnInit {
   public busy: boolean = false;
 
 
-  constructor(public http: HttpClient, public generalService: GeneralService, public fileService: FileService, public dialogSrv: DialogService, public toastrService: ToastrService, public router: Router, public route: ActivatedRoute) {
+  constructor(public http: HttpClient, public generalService: GeneralService, public fileService: FileService, public dialogSrv: DialogService, public toastrService: ToastrService, public router: Router, public route: ActivatedRoute, public urlState: UrlStateService) {
 
-    this.hardlinkFilter = localStorage.getItem("hardlink") == "null" ? null : (localStorage.getItem("hardlink") == "true");
-    this.inQbitFilter = localStorage.getItem("inQbit") == "null" ? null : (localStorage.getItem("inQbit") == "true");
-    this.folderInQbitFilter = localStorage.getItem("folderInQbit") == "null" ? null : (localStorage.getItem("folderInQbit") == "true");
+    // Filters restore from the URL first (so a refresh keeps them), then fall back to localStorage.
+    this.hardlinkFilter = this.readTriStateFilter("hardlink");
+    this.inQbitFilter = this.readTriStateFilter("inQbit");
+    this.folderInQbitFilter = this.readTriStateFilter("folderInQbit");
+    this.hashDuplicate = this.readTriStateFilter("hashDuplicate");
     const needConfirmStored = localStorage.getItem("needConfirm");
     this.needConfirm = needConfirmStored == null || needConfirmStored == "null" ? true : (needConfirmStored == "true");
-    this.hashDuplicate = localStorage.getItem("hashDuplicate") == "null" ? null : (localStorage.getItem("hashDuplicate") == "true");
+  }
+
+  // Tri-state filter (true/false/null). URL query param wins, then localStorage, else null.
+  private readTriStateFilter(key: string): boolean | null {
+    const raw = this.urlState.get(key) ?? localStorage.getItem(key);
+    if (raw == null || raw === "null") {
+      return null;
+    }
+    return raw === "true";
   }
 
   buildUrl(): string {
@@ -263,6 +274,13 @@ export class FileBrowserComponent implements OnInit {
     localStorage.setItem("folderInQbit", this.folderInQbitFilter?.toString() ?? "null");
     localStorage.setItem("needConfirm", this.needConfirm.toString());
     localStorage.setItem("hashDuplicate", this.hashDuplicate?.toString() ?? "null");
+    // Mirror the filters into the URL so a refresh restores them.
+    this.urlState.patch({
+      hardlink: this.hardlinkFilter,
+      inQbit: this.inQbitFilter,
+      folderInQbit: this.folderInQbitFilter,
+      hashDuplicate: this.hashDuplicate,
+    });
     this.load()
   }
 
